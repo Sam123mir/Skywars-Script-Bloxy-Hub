@@ -16,24 +16,27 @@ BloxyHub.__index = BloxyHub
 
 local THEME = {
     Background = {
-        Primary = Color3.fromRGB(11, 11, 11),      -- #0B0B0B
-        Secondary = Color3.fromRGB(21, 21, 21),    -- #151515
-        Elevated = Color3.fromRGB(26, 26, 26),     -- #1A1A1A
-        Hover = Color3.fromRGB(32, 32, 32),        -- #202020
+        Primary = Color3.fromRGB(8, 8, 12),        -- Más oscuro y azulado
+        Secondary = Color3.fromRGB(16, 16, 24),    -- Más rico
+        Elevated = Color3.fromRGB(22, 22, 32),     -- Sutil azul
+        Hover = Color3.fromRGB(28, 28, 40),        -- Hover más visible
+        Glass = Color3.fromRGB(18, 18, 26),        -- Para efectos glass
     },
     Accent = {
-        Primary = Color3.fromRGB(99, 102, 241),    -- Indigo #6366F1
-        Secondary = Color3.fromRGB(139, 92, 246),  -- Purple #8B5CF6
-        Success = Color3.fromRGB(16, 185, 129),    -- Green #10B981
-        Warning = Color3.fromRGB(245, 158, 11),    -- Orange #F59E0B
-        Danger = Color3.fromRGB(239, 68, 68),      -- Red #EF4444
+        Primary = Color3.fromRGB(109, 112, 255),   -- Indigo más brillante
+        Secondary = Color3.fromRGB(149, 102, 255), -- Purple más vibrante
+        Success = Color3.fromRGB(26, 195, 139),    -- Verde más brillante
+        Warning = Color3.fromRGB(255, 168, 21),    -- Naranja más vibrante
+        Danger = Color3.fromRGB(249, 78, 78),      -- Rojo más brillante
+        Glow = Color3.fromRGB(119, 122, 255),      -- Para efectos glow
     },
     Text = {
-        Primary = Color3.fromRGB(255, 255, 255),   -- White
-        Secondary = Color3.fromRGB(156, 163, 175), -- Gray #9CA3AF
-        Muted = Color3.fromRGB(107, 114, 128),     -- Gray #6B7280
+        Primary = Color3.fromRGB(255, 255, 255),   -- White puro
+        Secondary = Color3.fromRGB(166, 173, 185), -- Más claro
+        Muted = Color3.fromRGB(117, 124, 138),     -- Más visible
     },
-    Border = Color3.fromRGB(37, 37, 37),           -- #252525
+    Border = Color3.fromRGB(42, 42, 52),           -- Border más visible
+    Shadow = Color3.fromRGB(0, 0, 0),              -- Para sombras
 }
 
 -- Services
@@ -580,10 +583,30 @@ function BloxyHub:CreateWindow(config)
             frame.ZIndex = 4
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
             
+            -- Gradient background
+            local bgGradient = Instance.new("UIGradient", frame)
+            bgGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, THEME.Background.Elevated),
+                ColorSequenceKeypoint.new(1, THEME.Background.Glass)
+            }
+            bgGradient.Rotation = 135
+            
             local frameStroke = Instance.new("UIStroke", frame)
             frameStroke.Color = value and THEME.Accent.Primary or THEME.Border
-            frameStroke.Thickness = 1
-            frameStroke.Transparency = value and 0.5 or 0.8
+            frameStroke.Thickness = 1.5
+            frameStroke.Transparency = value and 0.3 or 0.7
+            
+            -- Glow effect cuando está activo
+            if value then
+                local glow = Instance.new("ImageLabel", frame)
+                glow.Size = UDim2.new(1, 20, 1, 20)
+                glow.Position = UDim2.new(0, -10, 0, -10)
+                glow.BackgroundTransparency = 1
+                glow.Image = "rbxassetid://5028857084"
+                glow.ImageColor3 = THEME.Accent.Glow
+                glow.ImageTransparency = 0.7
+                glow.ZIndex = 3
+            end
             
             -- Title
             local label = Instance.new("TextLabel", frame)
@@ -612,7 +635,7 @@ function BloxyHub:CreateWindow(config)
                 desc.ZIndex = 5
             end
             
-            -- Toggle background
+            -- Toggle background con gradiente
             local toggleBg = Instance.new("Frame", frame)
             toggleBg.Size = UDim2.new(0, 48, 0, 24)
             toggleBg.Position = UDim2.new(1, -60, 0, 23)
@@ -621,7 +644,18 @@ function BloxyHub:CreateWindow(config)
             toggleBg.ZIndex = 5
             Instance.new("UICorner", toggleBg).CornerRadius = UDim.new(1, 0)
             
-            -- Toggle circle
+            -- Gradiente en el toggle
+            local toggleGradient = Instance.new("UIGradient", toggleBg)
+            toggleGradient.Color = value and ColorSequence.new{
+                ColorSequenceKeypoint.new(0, THEME.Accent.Primary),
+                ColorSequenceKeypoint.new(1, THEME.Accent.Secondary)
+            } or ColorSequence.new{
+                ColorSequenceKeypoint.new(0, THEME.Background.Secondary),
+                ColorSequenceKeypoint.new(1, THEME.Background.Hover)
+            }
+            toggleGradient.Rotation = 90
+            
+            -- Toggle circle con sombra
             local circle = Instance.new("Frame", toggleBg)
             circle.Size = UDim2.new(0, 18, 0, 18)
             circle.Position = value and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
@@ -629,6 +663,12 @@ function BloxyHub:CreateWindow(config)
             circle.BorderSizePixel = 0
             circle.ZIndex = 6
             Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+            
+            -- Sombra del circle
+            local circleShadow = Instance.new("UIStroke", circle)
+            circleShadow.Color = THEME.Shadow
+            circleShadow.Thickness = 2
+            circleShadow.Transparency = 0.8
             
             -- Click area
             local btn = Instance.new("TextButton", frame)
@@ -640,11 +680,23 @@ function BloxyHub:CreateWindow(config)
             btn.MouseButton1Click:Connect(function()
                 value = not value
                 
+                -- Animar toggle background
                 Tween(toggleBg, {BackgroundColor3 = value and THEME.Accent.Primary or THEME.Background.Secondary}, 0.3)
+                toggleGradient.Color = value and ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, THEME.Accent.Primary),
+                    ColorSequenceKeypoint.new(1, THEME.Accent.Secondary)
+                } or ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, THEME.Background.Secondary),
+                    ColorSequenceKeypoint.new(1, THEME.Background.Hover)
+                }
+                
+                -- Animar circle
                 Tween(circle, {Position = value and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}, 0.3, Enum.EasingStyle.Back)
+                
+                -- Animar frame stroke
                 Tween(frameStroke, {
                     Color = value and THEME.Accent.Primary or THEME.Border,
-                    Transparency = value and 0.5 or 0.8
+                    Transparency = value and 0.3 or 0.7
                 }, 0.3)
                 
                 if config.Callback then
@@ -666,7 +718,7 @@ function BloxyHub:CreateWindow(config)
                     toggleBg.BackgroundColor3 = value and THEME.Accent.Primary or THEME.Background.Secondary
                     circle.Position = value and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
                     frameStroke.Color = value and THEME.Accent.Primary or THEME.Border
-                    frameStroke.Transparency = value and 0.5 or 0.8
+                    frameStroke.Transparency = value and 0.3 or 0.7
                 end
             }
         end
@@ -724,7 +776,7 @@ function BloxyHub:CreateWindow(config)
             sliderBg.ZIndex = 5
             Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
             
-            -- Slider fill
+            -- Slider fill con gradiente vibrante
             local fill = Instance.new("Frame", sliderBg)
             local fillPercent = (value - config.Min) / (config.Max - config.Min)
             fill.Size = UDim2.new(fillPercent, 0, 1, 0)
@@ -733,19 +785,38 @@ function BloxyHub:CreateWindow(config)
             fill.ZIndex = 6
             Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
             
-            -- Slider thumb
+            -- Gradiente en el fill (Indigo a Purple)
+            local fillGradient = Instance.new("UIGradient", fill)
+            fillGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, THEME.Accent.Primary),
+                ColorSequenceKeypoint.new(1, THEME.Accent.Secondary)
+            }
+            fillGradient.Rotation = 90
+            
+            -- Slider thumb con efectos
             local thumb = Instance.new("Frame", sliderBg)
-            thumb.Size = UDim2.new(0, 16, 0, 16)
-            thumb.Position = UDim2.new(fillPercent, -8, 0.5, -8)
-            thumb.BackgroundColor3 = THEME.Accent.Primary
+            thumb.Size = UDim2.new(0, 18, 0, 18)
+            thumb.Position = UDim2.new(fillPercent, -9, 0.5, -9)
+            thumb.BackgroundColor3 = Color3.new(1, 1, 1)
             thumb.BorderSizePixel = 0
             thumb.ZIndex = 7
             Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
             
+            -- Glow effect en thumb
             local thumbGlow = Instance.new("UIStroke", thumb)
-            thumbGlow.Color = THEME.Accent.Primary
-            thumbGlow.Thickness = 3
-            thumbGlow.Transparency = 0.7
+            thumbGlow.Color = THEME.Accent.Glow
+            thumbGlow.Thickness = 4
+            thumbGlow.Transparency = 0.5
+            
+            -- Sombra adicional
+            local thumbShadow = Instance.new("ImageLabel", thumb)
+            thumbShadow.Size = UDim2.new(1, 10, 1, 10)
+            thumbShadow.Position = UDim2.new(0, -5, 0, -5)
+            thumbShadow.BackgroundTransparency = 1
+            thumbShadow.Image = "rbxassetid://5028857084"
+            thumbShadow.ImageColor3 = THEME.Accent.Primary
+            thumbShadow.ImageTransparency = 0.6
+            thumbShadow.ZIndex = 6
             
             -- Dragging
             local btn = Instance.new("TextButton", sliderBg)
@@ -803,36 +874,55 @@ function BloxyHub:CreateWindow(config)
         
         function Tab:CreateButton(config)
             local btn = Instance.new("TextButton", TabContainer)
-            btn.Size = UDim2.new(1, 0, 0, 45)
+            btn.Size = UDim2.new(1, 0, 0, 50)
             btn.BackgroundColor3 = THEME.Accent.Primary
-            btn.BackgroundTransparency = 0.1
+            btn.BackgroundTransparency = 0.05
             btn.Text = config.Name
-            btn.TextColor3 = THEME.Text.Primary
+            btn.TextColor3 = Color3.new(1, 1, 1)
             btn.Font = Enum.Font.GothamBold
-            btn.TextSize = 14
+            btn.TextSize = 15
             btn.BorderSizePixel = 0
             btn.ZIndex = 4
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
             
-            local btnStroke = Instance.new("UIStroke", btn)
-            btnStroke.Color = THEME.Accent.Primary
-            btnStroke.Thickness = 1
-            btnStroke.Transparency = 0.5
+            -- Gradiente vibrante en botón
+            local btnGradient = Instance.new("UIGradient", btn)
+            btnGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, THEME.Accent.Primary),
+                ColorSequenceKeypoint.new(1, THEME.Accent.Secondary)
+            }
+            btnGradient.Rotation = 45
             
+            -- Stroke con glow
+            local btnStroke = Instance.new("UIStroke", btn)
+            btnStroke.Color = THEME.Accent.Glow
+            btnStroke.Thickness = 1.5
+            btnStroke.Transparency = 0.4
+            
+            -- Efecto de brillo al pasar mouse
             btn.MouseEnter:Connect(function()
                 Tween(btn, {BackgroundTransparency = 0}, 0.2)
-                Tween(btn, {Size = UDim2.new(1, 0, 0, 48)}, 0.2)
+                Tween(btn, {Size = UDim2.new(1, 0, 0, 53)}, 0.2, Enum.EasingStyle.Back)
+                Tween(btnStroke, {Transparency = 0.2}, 0.2)
             end)
             
             btn.MouseLeave:Connect(function()
-                Tween(btn, {BackgroundTransparency = 0.1}, 0.2)
-                Tween(btn, {Size = UDim2.new(1, 0, 0, 45)}, 0.2)
+                Tween(btn, {BackgroundTransparency = 0.05}, 0.2)
+                Tween(btn, {Size = UDim2.new(1, 0, 0, 50)}, 0.2, Enum.EasingStyle.Back)
+                Tween(btnStroke, {Transparency = 0.4}, 0.2)
             end)
             
             btn.MouseButton1Click:Connect(function()
-                Tween(btn, {BackgroundColor3 = THEME.Accent.Secondary}, 0.1)
-                task.wait(0.1)
-                Tween(btn, {BackgroundColor3 = THEME.Accent.Primary}, 0.1)
+                -- Efecto click: cambiar a color secundario
+                btnGradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, THEME.Accent.Secondary),
+                    ColorSequenceKeypoint.new(1, THEME.Accent.Primary)
+                }
+                task.wait(0.15)
+                btnGradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, THEME.Accent.Primary),
+                    ColorSequenceKeypoint.new(1, THEME.Accent.Secondary)
+                }
                 
                 if config.Callback then
                     pcall(function() config.Callback() end)

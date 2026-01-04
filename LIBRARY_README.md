@@ -591,7 +591,7 @@ MIT License - Uso libre para scripts de Roblox
 
 <div align="center">
 
-**Hecho con ❤️ por 16bitplayer**
+**Hecho por Sammir**
 
 ![Footer](https://img.shields.io/badge/BloxyHub-v2.0-6366F1?style=for-the-badge&logo=lua)
 
