@@ -14,49 +14,135 @@ end
 repeat wait() until game:GetService("Players").LocalPlayer
 
 -- ============================================
--- CARGAR WINDUI CON FALLBACK
+-- CARGAR UI CON MÚLTIPLES FALLBACKS
 -- ============================================
 
-local WindUI = nil
-local useCustomUI = false
+local UILibrary = nil
+local uiType = "none"
 
--- Intentar cargar WindUI desde múltiples fuentes
-local windUIURLs = {
-    "https://raw.githubusercontent.com/Footagesus/WindUI/main/source.lua",
-    "https://raw.githubusercontent.com/Footagesus/WindUI/master/source.lua",
+-- Lista de librerías UI en orden de prioridad (más estable primero)
+local uiLibraries = {
+    {
+        name = "Rayfield",
+        url = "https://raw.githubusercontent.com/shlexware/Rayfield/main/source",
+        type = "rayfield"
+    },
+    {
+        name = "Fluent",
+        url = "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua",
+        type = "fluent"
+    },
+    {
+        name = "Orion",
+        url = "https://raw.githubusercontent.com/shlexware/Orion/main/source",
+        type = "orion"
+    },
+    {
+        name = "WindUI",
+        url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/source.lua",
+        type = "windui"
+    }
 }
 
-for i, url in ipairs(windUIURLs) do
+-- Intentar cargar cada librería
+print("🔄 Intentando cargar UI...")
+
+for i, lib in ipairs(uiLibraries) do
+    print("📦 Probando " .. lib.name .. "...")
+    
     local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
+        return loadstring(game:HttpGet(lib.url))()
     end)
     
     if success and result then
-        WindUI = result
-        print("✅ WindUI cargado desde: " .. url)
+        UILibrary = result
+        uiType = lib.type
+        print("✅ " .. lib.name .. " cargado exitosamente!")
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "✅ UI Cargada",
+            Text = "Usando: " .. lib.name .. "\nScript iniciando...",
+            Duration = 3
+        })
         break
     else
-        warn("❌ Intento " .. i .. " falló: " .. url)
+        warn("❌ " .. lib.name .. " falló: " .. tostring(result))
     end
 end
 
--- Si WindUI no cargó, usar UI personalizada
-if not WindUI then
-    warn("⚠️ WindUI no disponible. Cargando UI BÁSICA...")
-    useCustomUI = true
+-- Si ninguna UI cargó
+if not UILibrary then
+    warn("⚠️ Ninguna UI disponible. Usando modo SOLO BOTONES...")
+    uiType = "buttons_only"
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "⚔️ SKYWARS MOBILE",
+        Text = "Modo Compacto\nSolo botones flotantes\nScript 100% funcional",
+        Duration = 8
+    })
 end
 
 -- ============================================
--- CONFIGURACIÓN INICIAL - MOBILE OPTIMIZED
+-- CONFIGURACIÓN INICIAL - MULTI-UI SUPPORT
 -- ============================================
 
 local Window
 
-if not useCustomUI and WindUI then
-    Window = WindUI:CreateWindow({
+if uiType == "rayfield" then
+    -- Rayfield UI
+    Window = UILibrary:CreateWindow({
+        Name = "⚔️ SKYWARS MOBILE v4.2",
+        LoadingTitle = "Skywars Ultimate",
+        LoadingSubtitle = "by Sammir_Dev",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "SkywarsMobile",
+            FileName = "Config"
+        },
+        Discord = {
+            Enabled = false,
+        },
+        KeySystem = true,
+        KeySettings = {
+            Title = "Skywars Mobile",
+            Subtitle = "Key System",
+            Note = "Key: mobile2024",
+            FileName = "SkywarsMobileKey",
+            SaveKey = true,
+            GrabKeyFromSite = false,
+            Key = {"mobile2024"}
+        }
+    })
+    
+elseif uiType == "fluent" then
+    -- Fluent UI
+    Window = UILibrary:CreateWindow({
+        Title = "⚔️ Skywars Mobile",
+        SubTitle = "v4.2 by 16bitplayer",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(580, 460),
+        Acrylic = true,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.LeftControl
+    })
+    
+elseif uiType == "orion" then
+    -- Orion UI
+    Window = UILibrary:MakeWindow({
+        Name = "⚔️ Skywars Mobile v4.2",
+        HidePremium = false,
+        SaveConfig = true,
+        ConfigFolder = "SkywarsMobile",
+        IntroEnabled = true,
+        IntroText = "Skywars Mobile Ultimate"
+    })
+    
+elseif uiType == "windui" then
+    -- WindUI
+    Window = UILibrary:CreateWindow({
         Title = "⚔️ SKYWARS MOBILE",
         Icon = "rbxassetid://10734950309",
-        Author = "Sammir_Dev",
+        Author = "16bitplayer",
         Folder = "SkywarsMobile",
         Size = UDim2.fromOffset(480, 520),
         KeySystem = {
@@ -70,15 +156,22 @@ if not useCustomUI and WindUI then
         SideBarWidth = 160,
     })
 else
-    -- Modo sin WindUI
+    -- Modo solo botones - Window dummy
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "⚡ SKYWARS MOBILE v4.1",
-        Text = "UI Compacta Activada\nSolo botones flotantes\nScript 100% funcional",
+        Title = "⚡ SKYWARS MOBILE v4.2",
+        Text = "UI Compacta Activada\nTodos los hacks disponibles\nUsa los 5 botones flotantes",
         Duration = 8
     })
     
-    -- Window dummy para evitar errores
     Window = {
+        CreateTab = function() return {
+            CreateSection = function() return {
+                CreateToggle = function() end,
+                CreateButton = function() end,
+                CreateSlider = function() end,
+                CreateInput = function() end
+            } end
+        } end,
         Tab = function() return {
             Section = function() return {
                 Toggle = function() end,
@@ -86,29 +179,58 @@ else
                 Slider = function() end,
                 Input = function() end
             } end
-        } end,
-        Notification = function() end
+        } end
     }
 end
-
 
 -- ============================================
 -- SISTEMA DE AUTO-UPDATE
 -- ============================================
 
-local CURRENT_VERSION = "4.1"
+local CURRENT_VERSION = "4.2"
 local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
--- Función notify universal
+-- Función notify universal (compatible con todas las UIs)
 local function notify(title, content, duration)
-    if WindUI and not useCustomUI then
-        WindUI:Notification({Title = title, Content = content, Duration = duration})
+    duration = duration or 5
+    
+    if uiType == "rayfield" and UILibrary then
+        UILibrary:Notify({
+            Title = title,
+            Content = content,
+            Duration = duration,
+            Image = "rbxassetid://10734950309"
+        })
+    elseif uiType == "fluent" and Window then
+        Window:Dialog({
+            Title = title,
+            Content = content,
+            Buttons = {
+                {
+                    Title = "OK",
+                    Callback = function() end
+                }
+            }
+        })
+    elseif uiType == "orion" and UILibrary then
+        UILibrary:MakeNotification({
+            Name = title,
+            Content = content,
+            Time = duration
+        })
+    elseif uiType == "windui" and UILibrary then
+        UILibrary:Notification({
+            Title = title,
+            Content = content,
+            Duration = duration
+        })
     else
+        -- Fallback a notificación nativa de Roblox
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = title,
             Text = content,
-            Duration = duration or 5
+            Duration = duration
         })
     end
 end
@@ -193,7 +315,7 @@ local lockedTarget = nil
 
 local config = {
     -- Script Info
-    _version = "4.1",
+    _version = "4.2",
     _buildDate = "2026-01-03",
     _author = "16bitplayer",
     _scriptURL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua",
