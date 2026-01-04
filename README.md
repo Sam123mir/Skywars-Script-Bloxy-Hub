@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-4.1-blue.svg)
+![Version](https://img.shields.io/badge/version-4.3-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Roblox-red.svg)
 ![Mobile](https://img.shields.io/badge/optimized-Mobile-green.svg)
 ![Status](https://img.shields.io/badge/status-Active-success.svg)
