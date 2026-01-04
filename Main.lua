@@ -184,10 +184,193 @@ else
 end
 
 -- ============================================
+-- WRAPPER UNIVERSAL PARA TODAS LAS UIS
+-- ============================================
+
+-- Función para crear tabs compatibles con todas las UIs
+function Window:CreateTab(options)
+    local tabName = options.Title or options.Name or "Tab"
+    local tabIcon = options.Icon or ""
+    local tab
+    
+    if uiType == "rayfield" then
+        tab = Window:CreateTab(tabName, tabIcon)
+    elseif uiType == "fluent" then
+        tab = Window:AddTab({Title = tabName, Icon = tabIcon})
+    elseif uiType == "orion" then
+        tab = Window:MakeTab({Name = tabName, Icon = tabIcon, PremiumOnly = false})
+    elseif uiType == "windui" then
+        tab = Window:Tab({Title = tabName, Icon = tabIcon})
+    else
+        -- Dummy tab
+        tab = {
+            CreateSection = function() return {
+                CreateToggle = function() end,
+                CreateButton = function() end,
+                CreateSlider = function() end,
+                CreateInput = function() end
+            } end
+        }
+        return tab
+    end
+    
+    -- Wrapper para CreateSection
+    local originalTab = tab
+    tab.CreateSection = function(self, sectionOptions)
+        local sectionName = sectionOptions.Title or sectionOptions.Name or "Section"
+        local section
+        
+        if uiType == "rayfield" then
+            section = originalTab:CreateSection(sectionName)
+        elseif uiType == "fluent" then
+            -- Fluent no usa secciones, devolvemos el tab
+            section = originalTab
+        elseif uiType == "orion" then
+            section = originalTab:AddSection({Name = sectionName})
+        elseif uiType == "windui" then
+            section = originalTab:Section({Title = sectionName})
+        else
+            section = {
+                CreateToggle = function() end,
+                CreateButton = function() end,
+                CreateSlider = function() end,
+                CreateInput = function() end
+            }
+            return section
+        end
+        
+        -- Wrapper para CreateToggle
+        section.CreateToggle = function(self, toggleOptions)
+            if uiType == "rayfield" then
+                originalTab:CreateToggle({
+                    Name = toggleOptions.Title or toggleOptions.Name,
+                    CurrentValue = toggleOptions.Default or false,
+                    Callback = toggleOptions.Callback or function() end
+                })
+            elseif uiType == "fluent" then
+                originalTab:AddToggle(toggleOptions.Title or toggleOptions.Name, {
+                    Title = toggleOptions.Title or toggleOptions.Name,
+                    Default = toggleOptions.Default or false,
+                    Callback = toggleOptions.Callback or function() end
+                })
+            elseif uiType == "orion" then
+                originalTab:AddToggle({
+                    Name = toggleOptions.Title or toggleOptions.Name,
+                    Default = toggleOptions.Default or false,
+                    Callback = toggleOptions.Callback or function() end
+                })
+            elseif uiType == "windui" then
+                section:Toggle({
+                    Title = toggleOptions.Title or toggleOptions.Name,
+                    Default = toggleOptions.Default or false,
+                    Callback = toggleOptions.Callback or function() end
+                })
+            end
+        end
+        
+        -- Wrapper para CreateButton
+        section.CreateButton = function(self, buttonOptions)
+            if uiType == "rayfield" then
+                originalTab:CreateButton({
+                    Name = buttonOptions.Title or buttonOptions.Name,
+                    Callback = buttonOptions.Callback or function() end
+                })
+            elseif uiType == "fluent" then
+                originalTab:AddButton({
+                    Title = buttonOptions.Title or buttonOptions.Name,
+                    Callback = buttonOptions.Callback or function() end
+                })
+            elseif uiType == "orion" then
+                originalTab:AddButton({
+                    Name = buttonOptions.Title or buttonOptions.Name,
+                    Callback = buttonOptions.Callback or function() end
+                })
+            elseif uiType == "windui" then
+                section:Button({
+                    Title = buttonOptions.Title or buttonOptions.Name,
+                    Callback = buttonOptions.Callback or function() end
+                })
+            end
+        end
+        
+        -- Wrapper para CreateSlider
+        section.CreateSlider = function(self, sliderOptions)
+            if uiType == "rayfield" then
+                originalTab:CreateSlider({
+                    Name = sliderOptions.Title or sliderOptions.Name,
+                    Range = {sliderOptions.Min or 0, sliderOptions.Max or 100},
+                    Increment = 1,
+                    CurrentValue = sliderOptions.Default or sliderOptions.Min or 0,
+                    Callback = sliderOptions.Callback or function() end
+                })
+            elseif uiType == "fluent" then
+                originalTab:AddSlider(sliderOptions.Title or sliderOptions.Name, {
+                    Title = sliderOptions.Title or sliderOptions.Name,
+                    Min = sliderOptions.Min or 0,
+                    Max = sliderOptions.Max or 100,
+                    Default = sliderOptions.Default or sliderOptions.Min or 0,
+                    Callback = sliderOptions.Callback or function() end
+                })
+            elseif uiType == "orion" then
+                originalTab:AddSlider({
+                    Name = sliderOptions.Title or sliderOptions.Name,
+                    Min = sliderOptions.Min or 0,
+                    Max = sliderOptions.Max or 100,
+                    Default = sliderOptions.Default or sliderOptions.Min or 0,
+                    Callback = sliderOptions.Callback or function() end
+                })
+            elseif uiType == "windui" then
+                section:Slider({
+                    Title = sliderOptions.Title or sliderOptions.Name,
+                    Min = sliderOptions.Min or 0,
+                    Max = sliderOptions.Max or 100,
+                    Default = sliderOptions.Default or sliderOptions.Min or 0,
+                    Callback = sliderOptions.Callback or function() end
+                })
+            end
+        end
+        
+        -- Wrapper para CreateInput
+        section.CreateInput = function(self, inputOptions)
+            if uiType == "rayfield" then
+                originalTab:CreateInput({
+                    Name = inputOptions.Title or inputOptions.Name,
+                    PlaceholderText = inputOptions.Placeholder or "",
+                    Callback = inputOptions.Callback or function() end
+                })
+            elseif uiType == "fluent" then
+                originalTab:AddInput(inputOptions.Title or inputOptions.Name, {
+                    Title = inputOptions.Title or inputOptions.Name,
+                    Placeholder = inputOptions.Placeholder or "",
+                    Callback = inputOptions.Callback or function() end
+                })
+            elseif uiType == "orion" then
+                originalTab:AddTextbox({
+                    Name = inputOptions.Title or inputOptions.Name,
+                    Default = "",
+                    TextDisappear = true,
+                    Callback = inputOptions.Callback or function() end
+                })
+            elseif uiType == "windui" then
+                section:Input({
+                    Title = inputOptions.Title or inputOptions.Name,
+                    Placeholder = inputOptions.Placeholder or "",
+                    Callback = inputOptions.Callback or function() end
+                })
+            end
+        end
+        
+        return section
+    end
+    
+    return tab
+end
+
+-- ============================================
 -- SISTEMA DE AUTO-UPDATE
 -- ============================================
 
-local CURRENT_VERSION = "4.2"
+local CURRENT_VERSION = "4.3"
 local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
@@ -315,7 +498,7 @@ local lockedTarget = nil
 
 local config = {
     -- Script Info
-    _version = "4.2",
+    _version = "4.3",
     _buildDate = "2026-01-03",
     _author = "16bitplayer",
     _scriptURL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua",
