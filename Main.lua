@@ -33,7 +33,7 @@ end
 local Window = WindUI:CreateWindow({
     Title = "⚔️ SKYWARS MOBILE",
     Icon = "rbxassetid://10734950309",
-    Author = "16bitplayer",
+    Author = "Sammir_Dev",
     Folder = "SkywarsMobile",
     Size = UDim2.fromOffset(480, 520),
     KeySystem = {
@@ -45,7 +45,7 @@ local Window = WindUI:CreateWindow({
     Transparent = true,
     Theme = "Dark",
     SideBarWidth = 160,
-})`
+})
 
 -- ============================================
 -- SISTEMA DE AUTO-UPDATE
