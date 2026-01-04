@@ -195,21 +195,47 @@ function BloxyHub:CreateWindow(config)
     Title.TextSize = 16
     Title.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Close Button
-    local CloseBtn = Instance.new("TextButton", TopBar)
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(239, 68, 68)
-    CloseBtn.Text = "✕"
-    CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-    CloseBtn.Font = Enum.Font.GothamBold
-    CloseBtn.TextSize = 16
-    CloseBtn.BorderSizePixel = 0
-    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
-    CloseBtn.MouseButton1Click:Connect(function()
-        Tween(Main, {Size = UDim2.new(0, 0, 0, 0)}, 0.3)
-        task.wait(0.3)
-        ScreenGui:Destroy()
+    -- Logo Flotante (Minimize Button)
+    local Logo = Instance.new("ImageButton", ScreenGui)
+    Logo.Size = UDim2.new(0, 50, 0, 50)
+    Logo.Position = UDim2.new(0, 10, 0.5, -25)
+    Logo.BackgroundColor3 = Window.Theme.Accent
+    Logo.BorderSizePixel = 0
+    Logo.Visible = false
+    Logo.ZIndex = 10
+    Instance.new("UICorner", Logo).CornerRadius = UDim.new(1, 0)
+    
+    local LogoText = Instance.new("TextLabel", Logo)
+    LogoText.Size = UDim2.new(1, 0, 1, 0)
+    LogoText.BackgroundTransparency = 1
+    LogoText.Text = "⚔️"
+    LogoText.TextColor3 = Color3.new(1, 1, 1)
+    LogoText.Font = Enum.Font.GothamBold
+    LogoText.TextSize = 24
+    
+    -- Minimize Button (era Close)
+    local MinimizeBtn = Instance.new("TextButton", TopBar)
+    MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeBtn.Position = UDim2.new(1, -35, 0, 5)
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(251, 191, 36)
+    MinimizeBtn.Text = "—"
+    MinimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+    MinimizeBtn.Font = Enum.Font.GothamBold
+    MinimizeBtn.TextSize = 16
+    MinimizeBtn.BorderSizePixel = 0
+    Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 8)
+    
+    -- Minimize/Show functionality
+    MinimizeBtn.MouseButton1Click:Connect(function()
+        Main.Visible = false
+        Logo.Visible = true
+        Tween(Logo, {Position = UDim2.new(0, 10, 0.5, -25)}, 0.4)
+    end)
+    
+    Logo.MouseButton1Click:Connect(function()
+        Main.Visible = true
+        Logo.Visible = false
+        Tween(Main, {Size = UDim2.new(0, 550, 0, 400)}, 0.3)
     end)
     
     -- Dragging
