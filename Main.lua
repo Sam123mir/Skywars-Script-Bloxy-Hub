@@ -63,33 +63,43 @@ local function checkForUpdates()
     end)
     
     if success and versionData then
-        local latestVersion = versionData:match("([%d%.]+)")
+        -- Convertir a string y limpiar espacios
+        versionData = tostring(versionData):gsub("%s+", "")
         
-        if latestVersion and latestVersion ~= CURRENT_VERSION then
-            simpleNotify("🔄 UPDATE", "v"..latestVersion.." disponible", 5)
-            task.wait(2)
-            simpleNotify("⚡ Actualizando", "En 3 segundos...", 3)
-            task.wait(3)
+        -- Validar que sea un string válido
+        if type(versionData) == "string" and #versionData > 0 then
+            local latestVersion = versionData:match("([%d%.]+)")
             
-            local scriptSuccess, newScript = pcall(function()
-                return game:HttpGet(SCRIPT_URL, true)
-            end)
-            
-            if scriptSuccess then
-                simpleNotify("✅ Actualizado!", "Reiniciando v"..latestVersion, 2)
-                task.wait(1)
+            if latestVersion and latestVersion ~= CURRENT_VERSION then
+                simpleNotify("🔄 UPDATE", "v"..latestVersion.." disponible", 5)
+                task.wait(2)
+                simpleNotify("⚡ Actualizando", "En 3 segundos...", 3)
+                task.wait(3)
                 
-                -- Limpiar flag antes de cargar nueva versión
-                if getgenv then
-                    getgenv().SkywarsBloxyRunning = nil
+                local scriptSuccess, newScript = pcall(function()
+                    return game:HttpGet(SCRIPT_URL, true)
+                end)
+                
+                if scriptSuccess then
+                    simpleNotify("✅ Actualizado!", "Reiniciando v"..latestVersion, 2)
+                    task.wait(1)
+                    
+                    -- Limpiar flag antes de cargar nueva versión
+                    if getgenv then
+                        getgenv().SkywarsBloxyRunning = nil
+                    end
+                    
+                    loadstring(newScript)()
+                    return true  -- Indica que se actualizó
                 end
-                
-                loadstring(newScript)()
-                return true  -- Indica que se actualizó
+            else
+                print("✅ Versión actual: v" .. CURRENT_VERSION)
             end
         else
-            print("✅ Versión actual: v" .. CURRENT_VERSION)
+            warn("⚠️ No se pudo leer la versión desde GitHub")
         end
+    else
+        warn("⚠️ Error al verificar updates:", versionData)
     end
     return false
 end
