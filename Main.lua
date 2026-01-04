@@ -35,7 +35,7 @@ local RootPart = Character:WaitForChild("HumanoidRootPart")
 -- AUTO-UPDATE SYSTEM
 -- ============================================
 
-local CURRENT_VERSION = "5.3"
+local CURRENT_VERSION = "6.1"
 local VERSION_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
@@ -45,6 +45,16 @@ local function simpleNotify(title, text, duration)
         Text = text,
         Duration = duration or 5
     })
+end
+
+-- Verificar si ya está ejecutándose (prevenir duplicados)
+if getgenv and getgenv().SkywarsBloxyRunning then
+    warn("⚠️ SKYWARS ya está ejecutándose!")
+    return
+end
+
+if getgenv then
+    getgenv().SkywarsBloxyRunning = true
 end
 
 local function checkForUpdates()
@@ -58,18 +68,24 @@ local function checkForUpdates()
         if latestVersion and latestVersion ~= CURRENT_VERSION then
             simpleNotify("🔄 UPDATE", "v"..latestVersion.." disponible", 5)
             task.wait(2)
-            simpleNotify("⚡ Actualizando", "En 5 segundos...", 5)
-            task.wait(5)
+            simpleNotify("⚡ Actualizando", "En 3 segundos...", 3)
+            task.wait(3)
             
             local scriptSuccess, newScript = pcall(function()
                 return game:HttpGet(SCRIPT_URL, true)
             end)
             
             if scriptSuccess then
-                simpleNotify("✅ Actualizado!", "v"..latestVersion, 3)
+                simpleNotify("✅ Actualizado!", "Reiniciando v"..latestVersion, 2)
                 task.wait(1)
+                
+                -- Limpiar flag antes de cargar nueva versión
+                if getgenv then
+                    getgenv().SkywarsBloxyRunning = nil
+                end
+                
                 loadstring(newScript)()
-                return true
+                return true  -- Indica que se actualizó
             end
         else
             print("✅ Versión actual: v" .. CURRENT_VERSION)
@@ -78,7 +94,10 @@ local function checkForUpdates()
     return false
 end
 
-task.spawn(checkForUpdates)
+-- Verificar updates
+if checkForUpdates() then
+    return  -- Si se actualizó, terminar este script
+end
 
 -- ============================================
 -- CARGAR BLOXYHUB UI
