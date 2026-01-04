@@ -3,6 +3,7 @@
     ║  🎨 BLOXYHUB UI v2.0 - ULTRA PROFESSIONAL                  ║
     ║  Inspirado en diseño React moderno                         ║
     ║  Theme: Dark Mode + Indigo/Purple Accents                  ║
+    ║  Sistema de Notificaciones + Persistent Storage            ║
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
@@ -39,6 +40,7 @@ local THEME = {
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 
 -- Utility: Tween
@@ -52,7 +54,7 @@ local function Tween(obj, props, duration, style, direction)
 end
 
 -- ============================================
--- 🔔 NOTIFICATION SYSTEM V2.0
+-- 🔔 ADVANCED NOTIFICATION SYSTEM V2.0
 -- ============================================
 
 function BloxyHub:Notify(title, message, duration, notifType)
@@ -62,12 +64,21 @@ function BloxyHub:Notify(title, message, duration, notifType)
     container.ResetOnSpawn = false
     container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
+    -- Calculate position based on existing notifications
+    local yOffset = 10
+    for _, child in ipairs(container:GetChildren()) do
+        if child:IsA("Frame") then
+            yOffset = yOffset + child.AbsoluteSize.Y + 10
+        end
+    end
+    
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 320, 0, 90)
-    notif.Position = UDim2.new(1, -330, 0, 10 + (#container:GetChildren() * 100))
+    notif.Position = UDim2.new(1, 10, 0, yOffset) -- Start off-screen right
     notif.BackgroundColor3 = THEME.Background.Secondary
     notif.BorderSizePixel = 0
     notif.Parent = container
+    notif.ZIndex = 100
     Instance.new("UICorner", notif).CornerRadius = UDim.new(0, 12)
     
     -- Border stroke
@@ -79,6 +90,16 @@ function BloxyHub:Notify(title, message, duration, notifType)
     stroke.Thickness = 2
     stroke.Transparency = 0.5
     
+    -- Shadow effect
+    local shadow = Instance.new("ImageLabel", notif)
+    shadow.Size = UDim2.new(1, 20, 1, 20)
+    shadow.Position = UDim2.new(0, -10, 0, -10)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.7
+    shadow.ZIndex = 99
+    
     -- Icon background
     local iconBg = Instance.new("Frame", notif)
     iconBg.Size = UDim2.new(0, 40, 0, 40)
@@ -86,6 +107,7 @@ function BloxyHub:Notify(title, message, duration, notifType)
     iconBg.BackgroundColor3 = stroke.Color
     iconBg.BackgroundTransparency = 0.9
     iconBg.BorderSizePixel = 0
+    iconBg.ZIndex = 101
     Instance.new("UICorner", iconBg).CornerRadius = UDim.new(0, 10)
     
     -- Icon
@@ -98,6 +120,7 @@ function BloxyHub:Notify(title, message, duration, notifType)
     icon.TextColor3 = stroke.Color
     icon.Font = Enum.Font.GothamBold
     icon.TextSize = 20
+    icon.ZIndex = 102
     
     -- Title
     local titleLabel = Instance.new("TextLabel", notif)
@@ -109,6 +132,7 @@ function BloxyHub:Notify(title, message, duration, notifType)
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextSize = 14
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 101
     
     -- Message
     local msgLabel = Instance.new("TextLabel", notif)
@@ -121,6 +145,7 @@ function BloxyHub:Notify(title, message, duration, notifType)
     msgLabel.TextSize = 11
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextWrapped = true
+    msgLabel.ZIndex = 101
     
     -- Close button
     local closeBtn = Instance.new("TextButton", notif)
@@ -131,6 +156,15 @@ function BloxyHub:Notify(title, message, duration, notifType)
     closeBtn.TextColor3 = THEME.Text.Muted
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 14
+    closeBtn.ZIndex = 101
+    
+    closeBtn.MouseEnter:Connect(function()
+        Tween(closeBtn, {TextColor3 = THEME.Text.Primary}, 0.2)
+    end)
+    
+    closeBtn.MouseLeave:Connect(function()
+        Tween(closeBtn, {TextColor3 = THEME.Text.Muted}, 0.2)
+    end)
     
     -- Progress bar background
     local progressBg = Instance.new("Frame", notif)
@@ -138,6 +172,7 @@ function BloxyHub:Notify(title, message, duration, notifType)
     progressBg.Position = UDim2.new(0, 15, 1, -10)
     progressBg.BackgroundColor3 = THEME.Background.Elevated
     progressBg.BorderSizePixel = 0
+    progressBg.ZIndex = 101
     Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
     
     -- Progress bar fill
@@ -145,24 +180,34 @@ function BloxyHub:Notify(title, message, duration, notifType)
     progressFill.Size = UDim2.new(1, 0, 1, 0)
     progressFill.BackgroundColor3 = stroke.Color
     progressFill.BorderSizePixel = 0
+    progressFill.ZIndex = 102
     Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
     
-    -- Animation
-    notif.Position = UDim2.new(1, 0, 0, notif.Position.Y.Offset)
-    Tween(notif, {Position = UDim2.new(1, -330, 0, notif.Position.Y.Offset)}, 0.4, Enum.EasingStyle.Back)
+    -- Slide in animation
+    Tween(notif, {Position = UDim2.new(1, -330, 0, yOffset)}, 0.4, Enum.EasingStyle.Back)
     
     -- Progress animation
-    Tween(progressFill, {Size = UDim2.new(0, 0, 1, 0)}, duration or 3, Enum.EasingStyle.Linear)
+    local animDuration = duration or 3
+    Tween(progressFill, {Size = UDim2.new(0, 0, 1, 0)}, animDuration, Enum.EasingStyle.Linear)
     
     -- Close functionality
     local function close()
         Tween(notif, {Position = UDim2.new(1, 0, 0, notif.Position.Y.Offset)}, 0.3)
         task.wait(0.3)
         notif:Destroy()
+        
+        -- Reposition remaining notifications
+        local currentY = 10
+        for _, child in ipairs(container:GetChildren()) do
+            if child:IsA("Frame") and child ~= notif then
+                Tween(child, {Position = UDim2.new(1, -330, 0, currentY)}, 0.3)
+                currentY = currentY + child.AbsoluteSize.Y + 10
+            end
+        end
     end
     
     closeBtn.MouseButton1Click:Connect(close)
-    task.delay(duration or 3, close)
+    task.delay(animDuration, close)
 end
 
 -- ============================================
@@ -174,6 +219,7 @@ function BloxyHub:CreateWindow(config)
         Tabs = {},
         Theme = THEME,
         Dragging = false,
+        Config = {},
     }
     
     local ScreenGui = Instance.new("ScreenGui")
@@ -183,6 +229,9 @@ function BloxyHub:CreateWindow(config)
     
     if gethui then
         ScreenGui.Parent = gethui()
+    elseif syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+        ScreenGui.Parent = game:GetService("CoreGui")
     else
         ScreenGui.Parent = game:GetService("CoreGui")
     end
@@ -194,6 +243,7 @@ function BloxyHub:CreateWindow(config)
     Main.BackgroundColor3 = THEME.Background.Primary
     Main.BorderSizePixel = 0
     Main.Parent = ScreenGui
+    Main.ZIndex = 1
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
     
     -- Main shadow/glow
@@ -202,11 +252,20 @@ function BloxyHub:CreateWindow(config)
     mainStroke.Thickness = 1
     mainStroke.Transparency = 0.5
     
+    -- Animated background gradient (optional effect)
+    local bgGradient = Instance.new("UIGradient", Main)
+    bgGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, THEME.Background.Primary),
+        ColorSequenceKeypoint.new(1, THEME.Background.Secondary)
+    }
+    bgGradient.Rotation = 45
+    
     -- TopBar
     local TopBar = Instance.new("Frame", Main)
     TopBar.Size = UDim2.new(1, 0, 0, 50)
     TopBar.BackgroundColor3 = THEME.Background.Secondary
     TopBar.BorderSizePixel = 0
+    TopBar.ZIndex = 2
     local topCorner = Instance.new("UICorner", TopBar)
     topCorner.CornerRadius = UDim.new(0, 16)
     
@@ -215,15 +274,17 @@ function BloxyHub:CreateWindow(config)
     TitleContainer.Size = UDim2.new(1, -100, 1, 0)
     TitleContainer.Position = UDim2.new(0, 20, 0, 0)
     TitleContainer.BackgroundTransparency = 1
+    TitleContainer.ZIndex = 3
     
     local TitleIcon = Instance.new("TextLabel", TitleContainer)
     TitleIcon.Size = UDim2.new(0, 30, 0, 30)
     TitleIcon.Position = UDim2.new(0, 0, 0.5, -15)
     TitleIcon.BackgroundTransparency = 1
-    TitleIcon.Text = "⚔️"
+    TitleIcon.Text = config.Icon or "⚔️"
     TitleIcon.TextColor3 = THEME.Accent.Primary
     TitleIcon.Font = Enum.Font.GothamBold
     TitleIcon.TextSize = 20
+    TitleIcon.ZIndex = 3
     
     local Title = Instance.new("TextLabel", TitleContainer)
     Title.Size = UDim2.new(1, -40, 1, 0)
@@ -234,6 +295,28 @@ function BloxyHub:CreateWindow(config)
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 16
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 3
+    
+    -- User info badge (if provided)
+    if config.UserInfo then
+        local UserBadge = Instance.new("Frame", TopBar)
+        UserBadge.Size = UDim2.new(0, 120, 0, 30)
+        UserBadge.Position = UDim2.new(1, -250, 0.5, -15)
+        UserBadge.BackgroundColor3 = THEME.Background.Elevated
+        UserBadge.BorderSizePixel = 0
+        UserBadge.ZIndex = 3
+        Instance.new("UICorner", UserBadge).CornerRadius = UDim.new(0, 8)
+        
+        local UserLabel = Instance.new("TextLabel", UserBadge)
+        UserLabel.Size = UDim2.new(1, -10, 1, 0)
+        UserLabel.Position = UDim2.new(0, 5, 0, 0)
+        UserLabel.BackgroundTransparency = 1
+        UserLabel.Text = config.UserInfo
+        UserLabel.TextColor3 = THEME.Accent.Primary
+        UserLabel.Font = Enum.Font.GothamBold
+        UserLabel.TextSize = 11
+        UserLabel.ZIndex = 3
+    end
     
     -- Minimize Logo (cuando se minimiza)
     local Logo = Instance.new("ImageButton", ScreenGui)
@@ -253,10 +336,11 @@ function BloxyHub:CreateWindow(config)
     local LogoText = Instance.new("TextLabel", Logo)
     LogoText.Size = UDim2.new(1, 0, 1, 0)
     LogoText.BackgroundTransparency = 1
-    LogoText.Text = "⚔️"
+    LogoText.Text = config.Icon or "⚔️"
     LogoText.TextColor3 = Color3.new(1, 1, 1)
     LogoText.Font = Enum.Font.GothamBold
     LogoText.TextSize = 28
+    LogoText.ZIndex = 11
     
     -- Minimize Button
     local MinimizeBtn = Instance.new("TextButton", TopBar)
@@ -269,6 +353,7 @@ function BloxyHub:CreateWindow(config)
     MinimizeBtn.Font = Enum.Font.GothamBold
     MinimizeBtn.TextSize = 16
     MinimizeBtn.BorderSizePixel = 0
+    MinimizeBtn.ZIndex = 3
     Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 10)
     
     MinimizeBtn.MouseEnter:Connect(function()
@@ -288,6 +373,14 @@ function BloxyHub:CreateWindow(config)
     Logo.MouseButton1Click:Connect(function()
         Main.Visible = true
         Logo.Visible = false
+    end)
+    
+    Logo.MouseEnter:Connect(function()
+        Tween(Logo, {Size = UDim2.new(0, 70, 0, 70)}, 0.2, Enum.EasingStyle.Quad)
+    end)
+    
+    Logo.MouseLeave:Connect(function()
+        Tween(Logo, {Size = UDim2.new(0, 60, 0, 60)}, 0.2, Enum.EasingStyle.Quad)
     end)
     
     -- Dragging
@@ -318,6 +411,7 @@ function BloxyHub:CreateWindow(config)
     ContentContainer.Size = UDim2.new(1, 0, 1, -50)
     ContentContainer.Position = UDim2.new(0, 0, 0, 50)
     ContentContainer.BackgroundTransparency = 1
+    ContentContainer.ZIndex = 1
     
     -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", ContentContainer)
@@ -327,22 +421,46 @@ function BloxyHub:CreateWindow(config)
     Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 4
     Sidebar.ScrollBarImageColor3 = THEME.Accent.Primary
+    Sidebar.ZIndex = 2
     Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
-    Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 6)
-    Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 10)
+    
+    local sidebarLayout = Instance.new("UIListLayout", Sidebar)
+    sidebarLayout.Padding = UDim.new(0, 6)
+    
+    local sidebarPadding = Instance.new("UIPadding", Sidebar)
+    sidebarPadding.PaddingTop = UDim.new(0, 10)
+    sidebarPadding.PaddingLeft = UDim.new(0, 8)
+    sidebarPadding.PaddingRight = UDim.new(0, 8)
     
     -- Main Content Area
     local Content = Instance.new("Frame", ContentContainer)
     Content.Size = UDim2.new(1, -210, 1, -20)
     Content.Position = UDim2.new(0, 200, 0, 10)
     Content.BackgroundTransparency = 1
+    Content.ZIndex = 2
+    
+    -- Toggle UI visibility with keybind
+    if config.Keybind then
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if not gameProcessed and input.KeyCode == config.Keybind then
+                Main.Visible = not Main.Visible
+                if not Main.Visible then
+                    Logo.Visible = true
+                else
+                    Logo.Visible = false
+                end
+            end
+        end)
+    end
     
     -- ============================================
     -- 📑 CREATE TAB V2.0
     -- ============================================
     
     function Window:CreateTab(tabName, iconEmoji)
-        local Tab = {}
+        local Tab = {
+            Elements = {},
+        }
         
         -- Tab Button
         local TabBtn = Instance.new("TextButton", Sidebar)
@@ -352,6 +470,7 @@ function BloxyHub:CreateWindow(config)
         TabBtn.BorderSizePixel = 0
         TabBtn.AutoButtonColor = false
         TabBtn.Text = ""
+        TabBtn.ZIndex = 3
         
         local tabBtnCorner = Instance.new("UICorner", TabBtn)
         tabBtnCorner.CornerRadius = UDim.new(0, 10)
@@ -365,6 +484,7 @@ function BloxyHub:CreateWindow(config)
         tabIcon.TextColor3 = THEME.Text.Secondary
         tabIcon.Font = Enum.Font.GothamBold
         tabIcon.TextSize = 16
+        tabIcon.ZIndex = 4
         
         -- Tab Label
         local tabLabel = Instance.new("TextLabel", TabBtn)
@@ -376,6 +496,7 @@ function BloxyHub:CreateWindow(config)
         tabLabel.Font = Enum.Font.GothamBold
         tabLabel.TextSize = 13
         tabLabel.TextXAlignment = Enum.TextXAlignment.Left
+        tabLabel.ZIndex = 4
         
         -- Tab Container
         local TabContainer = Instance.new("ScrollingFrame", Content)
@@ -385,6 +506,7 @@ function BloxyHub:CreateWindow(config)
         TabContainer.ScrollBarThickness = 4
         TabContainer.ScrollBarImageColor3 = THEME.Accent.Primary
         TabContainer.Visible = false
+        TabContainer.ZIndex = 3
         
         local listLayout = Instance.new("UIListLayout", TabContainer)
         listLayout.Padding = UDim.new(0, 10)
@@ -393,6 +515,11 @@ function BloxyHub:CreateWindow(config)
         local padding = Instance.new("UIPadding", TabContainer)
         padding.PaddingTop = UDim.new(0, 5)
         padding.PaddingRight = UDim.new(0, 5)
+        
+        -- Update canvas size when elements are added
+        listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            TabContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+        end)
         
         -- Tab Click
         TabBtn.MouseButton1Click:Connect(function()
@@ -450,6 +577,7 @@ function BloxyHub:CreateWindow(config)
             frame.Size = UDim2.new(1, 0, 0, 70)
             frame.BackgroundColor3 = THEME.Background.Elevated
             frame.BorderSizePixel = 0
+            frame.ZIndex = 4
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
             
             local frameStroke = Instance.new("UIStroke", frame)
@@ -467,6 +595,7 @@ function BloxyHub:CreateWindow(config)
             label.Font = Enum.Font.GothamBold
             label.TextSize = 14
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 5
             
             -- Description
             if config.Description then
@@ -480,6 +609,7 @@ function BloxyHub:CreateWindow(config)
                 desc.TextSize = 11
                 desc.TextXAlignment = Enum.TextXAlignment.Left
                 desc.TextWrapped = true
+                desc.ZIndex = 5
             end
             
             -- Toggle background
@@ -488,6 +618,7 @@ function BloxyHub:CreateWindow(config)
             toggleBg.Position = UDim2.new(1, -60, 0, 23)
             toggleBg.BackgroundColor3 = value and THEME.Accent.Primary or THEME.Background.Secondary
             toggleBg.BorderSizePixel = 0
+            toggleBg.ZIndex = 5
             Instance.new("UICorner", toggleBg).CornerRadius = UDim.new(1, 0)
             
             -- Toggle circle
@@ -496,6 +627,7 @@ function BloxyHub:CreateWindow(config)
             circle.Position = value and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
             circle.BackgroundColor3 = Color3.new(1, 1, 1)
             circle.BorderSizePixel = 0
+            circle.ZIndex = 6
             Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
             
             -- Click area
@@ -503,6 +635,7 @@ function BloxyHub:CreateWindow(config)
             btn.Size = UDim2.new(1, 0, 1, 0)
             btn.BackgroundTransparency = 1
             btn.Text = ""
+            btn.ZIndex = 7
             
             btn.MouseButton1Click:Connect(function()
                 value = not value
@@ -514,8 +647,28 @@ function BloxyHub:CreateWindow(config)
                     Transparency = value and 0.5 or 0.8
                 }, 0.3)
                 
-                config.Callback(value)
+                if config.Callback then
+                    pcall(function() config.Callback(value) end)
+                end
             end)
+            
+            frame.MouseEnter:Connect(function()
+                Tween(frame, {BackgroundColor3 = THEME.Background.Hover}, 0.2)
+            end)
+            
+            frame.MouseLeave:Connect(function()
+                Tween(frame, {BackgroundColor3 = THEME.Background.Elevated}, 0.2)
+            end)
+            
+            return {
+                SetValue = function(newValue)
+                    value = newValue
+                    toggleBg.BackgroundColor3 = value and THEME.Accent.Primary or THEME.Background.Secondary
+                    circle.Position = value and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+                    frameStroke.Color = value and THEME.Accent.Primary or THEME.Border
+                    frameStroke.Transparency = value and 0.5 or 0.8
+                end
+            }
         end
         
         -- ============================================
@@ -529,6 +682,7 @@ function BloxyHub:CreateWindow(config)
             frame.Size = UDim2.new(1, 0, 0, 75)
             frame.BackgroundColor3 = THEME.Background.Elevated
             frame.BorderSizePixel = 0
+            frame.ZIndex = 4
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
             
             local frameStroke = Instance.new("UIStroke", frame)
@@ -546,6 +700,7 @@ function BloxyHub:CreateWindow(config)
             label.Font = Enum.Font.GothamBold
             label.TextSize = 14
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 5
             
             -- Value display
             local valueLabel = Instance.new("TextLabel", frame)
@@ -557,6 +712,7 @@ function BloxyHub:CreateWindow(config)
             valueLabel.TextColor3 = THEME.Accent.Primary
             valueLabel.Font = Enum.Font.GothamBold
             valueLabel.TextSize = 13
+            valueLabel.ZIndex = 5
             Instance.new("UICorner", valueLabel).CornerRadius = UDim.new(0, 8)
             
             -- Slider background
@@ -565,6 +721,7 @@ function BloxyHub:CreateWindow(config)
             sliderBg.Position = UDim2.new(0, 20, 0, 50)
             sliderBg.BackgroundColor3 = THEME.Background.Secondary
             sliderBg.BorderSizePixel = 0
+            sliderBg.ZIndex = 5
             Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
             
             -- Slider fill
@@ -573,6 +730,7 @@ function BloxyHub:CreateWindow(config)
             fill.Size = UDim2.new(fillPercent, 0, 1, 0)
             fill.BackgroundColor3 = THEME.Accent.Primary
             fill.BorderSizePixel = 0
+            fill.ZIndex = 6
             Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
             
             -- Slider thumb
@@ -581,6 +739,7 @@ function BloxyHub:CreateWindow(config)
             thumb.Position = UDim2.new(fillPercent, -8, 0.5, -8)
             thumb.BackgroundColor3 = THEME.Accent.Primary
             thumb.BorderSizePixel = 0
+            thumb.ZIndex = 7
             Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
             
             local thumbGlow = Instance.new("UIStroke", thumb)
@@ -594,6 +753,7 @@ function BloxyHub:CreateWindow(config)
             btn.Position = UDim2.new(0, 0, 0, -5)
             btn.BackgroundTransparency = 1
             btn.Text = ""
+            btn.ZIndex = 8
             
             local dragging = false
             
@@ -605,7 +765,9 @@ function BloxyHub:CreateWindow(config)
                 Tween(fill, {Size = UDim2.new(pos, 0, 1, 0)}, 0.1, Enum.EasingStyle.Linear)
                 Tween(thumb, {Position = UDim2.new(pos, -8, 0.5, -8)}, 0.1, Enum.EasingStyle.Linear)
                 
-                config.Callback(value)
+                if config.Callback then
+                    pcall(function() config.Callback(value) end)
+                end
             end
             
             btn.MouseButton1Down:Connect(function() dragging = true end)
@@ -615,6 +777,24 @@ function BloxyHub:CreateWindow(config)
             UserInputService.InputChanged:Connect(function(input)
                 if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end
             end)
+            
+            frame.MouseEnter:Connect(function()
+                Tween(frame, {BackgroundColor3 = THEME.Background.Hover}, 0.2)
+            end)
+            
+            frame.MouseLeave:Connect(function()
+                Tween(frame, {BackgroundColor3 = THEME.Background.Elevated}, 0.2)
+            end)
+            
+            return {
+                SetValue = function(newValue)
+                    value = math.clamp(newValue, config.Min, config.Max)
+                    valueLabel.Text = tostring(value)
+                    local pos = (value - config.Min) / (config.Max - config.Min)
+                    fill.Size = UDim2.new(pos, 0, 1, 0)
+                    thumb.Position = UDim2.new(pos, -8, 0.5, -8)
+                end
+            }
         end
         
         -- ============================================
@@ -631,6 +811,7 @@ function BloxyHub:CreateWindow(config)
             btn.Font = Enum.Font.GothamBold
             btn.TextSize = 14
             btn.BorderSizePixel = 0
+            btn.ZIndex = 4
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
             
             local btnStroke = Instance.new("UIStroke", btn)
@@ -640,17 +821,22 @@ function BloxyHub:CreateWindow(config)
             
             btn.MouseEnter:Connect(function()
                 Tween(btn, {BackgroundTransparency = 0}, 0.2)
+                Tween(btn, {Size = UDim2.new(1, 0, 0, 48)}, 0.2)
             end)
             
             btn.MouseLeave:Connect(function()
                 Tween(btn, {BackgroundTransparency = 0.1}, 0.2)
+                Tween(btn, {Size = UDim2.new(1, 0, 0, 45)}, 0.2)
             end)
             
             btn.MouseButton1Click:Connect(function()
                 Tween(btn, {BackgroundColor3 = THEME.Accent.Secondary}, 0.1)
                 task.wait(0.1)
                 Tween(btn, {BackgroundColor3 = THEME.Accent.Primary}, 0.1)
-                config.Callback()
+                
+                if config.Callback then
+                    pcall(function() config.Callback() end)
+                end
             end)
         end
         
@@ -663,6 +849,7 @@ function BloxyHub:CreateWindow(config)
             frame.Size = UDim2.new(1, 0, 0, 60)
             frame.BackgroundColor3 = THEME.Background.Elevated
             frame.BorderSizePixel = 0
+            frame.ZIndex = 4
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
             
             local frameStroke = Instance.new("UIStroke", frame)
@@ -680,6 +867,7 @@ function BloxyHub:CreateWindow(config)
             label.Font = Enum.Font.Gotham
             label.TextSize = 11
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 5
             
             local selected = config.Default or config.Options[1] or "None"
             
@@ -690,6 +878,7 @@ function BloxyHub:CreateWindow(config)
             dropBtn.BackgroundColor3 = THEME.Background.Secondary
             dropBtn.Text = ""
             dropBtn.BorderSizePixel = 0
+            dropBtn.ZIndex = 5
             Instance.new("UICorner", dropBtn).CornerRadius = UDim.new(0, 8)
             
             local dropLabel = Instance.new("TextLabel", dropBtn)
@@ -701,6 +890,7 @@ function BloxyHub:CreateWindow(config)
             dropLabel.Font = Enum.Font.GothamBold
             dropLabel.TextSize = 12
             dropLabel.TextXAlignment = Enum.TextXAlignment.Left
+            dropLabel.ZIndex = 6
             
             local arrow = Instance.new("TextLabel", dropBtn)
             arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -710,6 +900,7 @@ function BloxyHub:CreateWindow(config)
             arrow.TextColor3 = THEME.Text.Muted
             arrow.Font = Enum.Font.Gotham
             arrow.TextSize = 10
+            arrow.ZIndex = 6
             
             -- Options container
             local optionsFrame = Instance.new("ScrollingFrame", frame)
@@ -720,6 +911,7 @@ function BloxyHub:CreateWindow(config)
             optionsFrame.Visible = false
             optionsFrame.ScrollBarThickness = 4
             optionsFrame.ScrollBarImageColor3 = THEME.Accent.Primary
+            optionsFrame.ZIndex = 10
             Instance.new("UICorner", optionsFrame).CornerRadius = UDim.new(0, 8)
             Instance.new("UIListLayout", optionsFrame).Padding = UDim.new(0, 2)
             
@@ -738,6 +930,7 @@ function BloxyHub:CreateWindow(config)
                 optBtn.Font = Enum.Font.Gotham
                 optBtn.TextSize = 11
                 optBtn.BorderSizePixel = 0
+                optBtn.ZIndex = 11
                 
                 optBtn.MouseEnter:Connect(function()
                     if option ~= selected then
@@ -763,17 +956,138 @@ function BloxyHub:CreateWindow(config)
                         end
                     end
                     
-                    config.Callback(option)
+                    if config.Callback then
+                        pcall(function() config.Callback(option) end)
+                    end
                 end)
             end
             
             dropBtn.MouseButton1Click:Connect(function()
                 optionsFrame.Visible = not optionsFrame.Visible
                 frame.Size = optionsFrame.Visible and UDim2.new(1, 0, 0, 70 + optionsFrame.AbsoluteSize.Y) or UDim2.new(1, 0, 0, 60)
+                arrow.Text = optionsFrame.Visible and "▲" or "▼"
             end)
+            
+            return {
+                SetValue = function(newValue)
+                    if table.find(config.Options, newValue) then
+                        selected = newValue
+                        dropLabel.Text = newValue
+                        for _, child in ipairs(optionsFrame:GetChildren()) do
+                            if child:IsA("TextButton") then
+                                child.BackgroundTransparency = child.Text == selected and 0.9 or 1
+                                child.TextColor3 = child.Text == selected and THEME.Accent.Primary or THEME.Text.Primary
+                            end
+                        end
+                    end
+                end
+            }
+        end
+        
+        -- ============================================
+        -- 📝 CREATE INPUT BOX
+        -- ============================================
+        
+        function Tab:CreateInput(config)
+            local frame = Instance.new("Frame", TabContainer)
+            frame.Size = UDim2.new(1, 0, 0, 60)
+            frame.BackgroundColor3 = THEME.Background.Elevated
+            frame.BorderSizePixel = 0
+            frame.ZIndex = 4
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+            
+            local frameStroke = Instance.new("UIStroke", frame)
+            frameStroke.Color = THEME.Border
+            frameStroke.Thickness = 1
+            frameStroke.Transparency = 0.8
+            
+            -- Label
+            local label = Instance.new("TextLabel", frame)
+            label.Size = UDim2.new(1, -40, 0, 20)
+            label.Position = UDim2.new(0, 20, 0, 10)
+            label.BackgroundTransparency = 1
+            label.Text = config.Name
+            label.TextColor3 = THEME.Text.Secondary
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 11
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 5
+            
+            -- Input box
+            local inputBox = Instance.new("TextBox", frame)
+            inputBox.Size = UDim2.new(1, -40, 0, 30)
+            inputBox.Position = UDim2.new(0, 20, 0, 25)
+            inputBox.BackgroundColor3 = THEME.Background.Secondary
+            inputBox.BorderSizePixel = 0
+            inputBox.Text = config.Default or ""
+            inputBox.PlaceholderText = config.Placeholder or "Enter text..."
+            inputBox.TextColor3 = THEME.Text.Primary
+            inputBox.PlaceholderColor3 = THEME.Text.Muted
+            inputBox.Font = Enum.Font.Gotham
+            inputBox.TextSize = 12
+            inputBox.TextXAlignment = Enum.TextXAlignment.Left
+            inputBox.ClearTextOnFocus = false
+            inputBox.ZIndex = 5
+            Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 8)
+            Instance.new("UIPadding", inputBox).PaddingLeft = UDim.new(0, 10)
+            
+            inputBox.FocusLost:Connect(function(enterPressed)
+                if enterPressed and config.Callback then
+                    pcall(function() config.Callback(inputBox.Text) end)
+                end
+            end)
+            
+            inputBox.Focused:Connect(function()
+                Tween(frameStroke, {Color = THEME.Accent.Primary, Transparency = 0.5}, 0.2)
+            end)
+            
+            inputBox.FocusLost:Connect(function()
+                Tween(frameStroke, {Color = THEME.Border, Transparency = 0.8}, 0.2)
+            end)
+            
+            return {
+                SetValue = function(newValue)
+                    inputBox.Text = tostring(newValue)
+                end
+            }
+        end
+        
+        -- ============================================
+        -- 📖 CREATE LABEL
+        -- ============================================
+        
+        function Tab:CreateLabel(text)
+            local label = Instance.new("TextLabel", TabContainer)
+            label.Size = UDim2.new(1, 0, 0, 35)
+            label.BackgroundColor3 = THEME.Background.Elevated
+            label.BackgroundTransparency = 0.5
+            label.BorderSizePixel = 0
+            label.Text = text
+            label.TextColor3 = THEME.Text.Secondary
+            label.Font = Enum.Font.GothamBold
+            label.TextSize = 13
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 4
+            Instance.new("UICorner", label).CornerRadius = UDim.new(0, 12)
+            Instance.new("UIPadding", label).PaddingLeft = UDim.new(0, 20)
+            
+            return {
+                SetText = function(newText)
+                    label.Text = tostring(newText)
+                end
+            }
         end
         
         return Tab
+    end
+    
+    -- Window utility functions
+    function Window:Notify(title, message, duration, notifType)
+        BloxyHub:Notify(title, message, duration, notifType)
+    end
+    
+    function Window:Destroy()
+        ScreenGui:Destroy()
     end
     
     return Window
