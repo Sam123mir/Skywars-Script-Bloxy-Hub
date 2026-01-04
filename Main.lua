@@ -14,38 +14,83 @@ end
 repeat wait() until game:GetService("Players").LocalPlayer
 
 -- ============================================
--- CARGAR WINDUI
+-- CARGAR WINDUI CON FALLBACK
 -- ============================================
 
-local success, WindUI = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/source.lua"))()
-end)
+local WindUI = nil
+local useCustomUI = false
 
-if not success then
-    warn("Error al cargar WindUI. Intentando alternativa...")
-    return
+-- Intentar cargar WindUI desde múltiples fuentes
+local windUIURLs = {
+    "https://raw.githubusercontent.com/Footagesus/WindUI/main/source.lua",
+    "https://raw.githubusercontent.com/Footagesus/WindUI/master/source.lua",
+}
+
+for i, url in ipairs(windUIURLs) do
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    
+    if success and result then
+        WindUI = result
+        print("✅ WindUI cargado desde: " .. url)
+        break
+    else
+        warn("❌ Intento " .. i .. " falló: " .. url)
+    end
+end
+
+-- Si WindUI no cargó, usar UI personalizada
+if not WindUI then
+    warn("⚠️ WindUI no disponible. Cargando UI BÁSICA...")
+    useCustomUI = true
 end
 
 -- ============================================
 -- CONFIGURACIÓN INICIAL - MOBILE OPTIMIZED
 -- ============================================
 
-local Window = WindUI:CreateWindow({
-    Title = "⚔️ SKYWARS MOBILE",
-    Icon = "rbxassetid://10734950309",
-    Author = "Sammir_Dev",
-    Folder = "SkywarsMobile",
-    Size = UDim2.fromOffset(480, 520),
-    KeySystem = {
-        Key = "mobile2024",
-        Note = "Key: mobile2024",
-        SaveKey = true,
-        FileName = "SkywarsMobile_Key"
-    },
-    Transparent = true,
-    Theme = "Dark",
-    SideBarWidth = 160,
-})
+local Window
+
+if not useCustomUI and WindUI then
+    Window = WindUI:CreateWindow({
+        Title = "⚔️ SKYWARS MOBILE",
+        Icon = "rbxassetid://10734950309",
+        Author = "Sammir_Dev",
+        Folder = "SkywarsMobile",
+        Size = UDim2.fromOffset(480, 520),
+        KeySystem = {
+            Key = "mobile2024",
+            Note = "Key: mobile2024",
+            SaveKey = true,
+            FileName = "SkywarsMobile_Key"
+        },
+        Transparent = true,
+        Theme = "Dark",
+        SideBarWidth = 160,
+    })
+else
+    -- Modo sin WindUI
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "⚡ SKYWARS MOBILE v4.1",
+        Text = "UI Compacta Activada\nSolo botones flotantes\nScript 100% funcional",
+        Duration = 8
+    })
+    
+    -- Window dummy para evitar errores
+    Window = {
+        Tab = function() return {
+            Section = function() return {
+                Toggle = function() end,
+                Button = function() end,
+                Slider = function() end,
+                Input = function() end
+            } end
+        } end,
+        Notification = function() end
+    }
+end
+
 
 -- ============================================
 -- SISTEMA DE AUTO-UPDATE
@@ -54,6 +99,19 @@ local Window = WindUI:CreateWindow({
 local CURRENT_VERSION = "4.1"
 local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
+
+-- Función notify universal
+local function notify(title, content, duration)
+    if WindUI and not useCustomUI then
+        WindUI:Notification({Title = title, Content = content, Duration = duration})
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = content,
+            Duration = duration or 5
+        })
+    end
+end
 
 local function checkForUpdates()
     local success, versionData = pcall(function()
@@ -64,19 +122,11 @@ local function checkForUpdates()
         local latestVersion = versionData:match("([%d%.]+)")
         
         if latestVersion and latestVersion ~= CURRENT_VERSION then
-            WindUI:Notification({
-                Title = "🔄 UPDATE DISPONIBLE",
-                Content = "Nueva versión: v" .. latestVersion .. "\nActual: v" .. CURRENT_VERSION,
-                Duration = 8
-            })
+            notify("🔄 UPDATE DISPONIBLE", "Nueva versión: v" .. latestVersion .. "\nActual: v" .. CURRENT_VERSION, 8)
             
             task.wait(2)
             
-            WindUI:Notification({
-                Title = "⚡ Auto-Update",
-                Content = "Actualizando en 5 segundos...\nCierra para cancelar",
-                Duration = 5
-            })
+            notify("⚡ Auto-Update", "Actualizando en 5 segundos...\nCierra para cancelar", 5)
             
             task.wait(5)
             
@@ -86,30 +136,18 @@ local function checkForUpdates()
             end)
             
             if updateSuccess and updateScript then
-                WindUI:Notification({
-                    Title = "✅ Actualizado!",
-                    Content = "Cargando v" .. latestVersion .. "...",
-                    Duration = 3
-                })
+                notify("✅ Actualizado!", "Cargando v" .. latestVersion .. "...", 3)
                 
                 task.wait(1)
                 loadstring(updateScript)()
                 return true
             else
-                WindUI:Notification({
-                    Title = "❌ Error",
-                    Content = "No se pudo descargar la actualización",
-                    Duration = 5
-                })
+                notify("❌ Error", "No se pudo descargar la actualización", 5)
             end
         else
             -- Versión actual
             task.wait(1)
-            WindUI:Notification({
-                Title = "✅ Actualizado",
-                Content = "Usando la última versión: v" .. CURRENT_VERSION,
-                Duration = 3
-            })
+            notify("✅ Actualizado", "Usando la última versión: v" .. CURRENT_VERSION, 3)
         end
     else
         -- No se pudo verificar
