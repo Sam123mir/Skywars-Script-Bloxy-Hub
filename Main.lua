@@ -35,7 +35,7 @@ local RootPart = Character:WaitForChild("HumanoidRootPart")
 -- AUTO-UPDATE SYSTEM
 -- ============================================
 
-local CURRENT_VERSION = "5.1"
+local CURRENT_VERSION = "5.3"
 local VERSION_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
@@ -566,7 +566,7 @@ end)
 -- ============================================
 
 local Window = BloxyHub:CreateWindow({
-    Title = "⚔️ SKYWARS ULTIMATE PRO v5.1",
+    Title = "⚔️ SKYWARS ULTIMATE PRO v5.3",
     Theme = "Purple"  -- Dark, Blue, Purple, Green
 })
 
@@ -574,7 +574,7 @@ local Window = BloxyHub:CreateWindow({
 -- TAB: COMBAT
 -- ============================================
 
-local CombatTab = Window:CreateTab("⚔️ Combat")
+local CombatTab = Window:CreateTab("Combat", "⚔️")
 
 CombatTab:CreateToggle({
     Name = "🎯 Enable Combat",
@@ -673,7 +673,7 @@ CombatTab:CreateSlider({
 -- TAB: MACROS
 -- ============================================
 
-local MacrosTab = Window:CreateTab("🎯 Macros")
+local MacrosTab = Window:CreateTab("Macros", "🎯")
 
 MacrosTab:CreateToggle({
     Name = "✅ Enable Macros",
@@ -729,7 +729,7 @@ MacrosTab:CreateButton({
 -- TAB: WEAPONS
 -- ============================================
 
-local WeaponsTab = Window:CreateTab("🗡️ Weapons")
+local WeaponsTab = Window:CreateTab("Weapons", "🗡️")
 
 WeaponsTab:CreateToggle({
     Name = "⚔️ Auto Equip",
@@ -751,7 +751,7 @@ WeaponsTab:CreateToggle({
 -- TAB: MOVEMENT
 -- ============================================
 
-local MovementTab = Window:CreateTab("🏃 Movement")
+local MovementTab = Window:CreateTab("Movement", "🏃")
 
 MovementTab:CreateSlider({
     Name = "🏃 Walk Speed",
@@ -793,7 +793,7 @@ MovementTab:CreateToggle({
 -- TAB: VISUAL
 -- ============================================
 
-local VisualTab = Window:CreateTab("👁️ Visual")
+local VisualTab = Window:CreateTab("Visual", "👁️")
 
 VisualTab:CreateToggle({
     Name = "🎯 Highlight Target",
@@ -811,7 +811,7 @@ VisualTab:CreateToggle({
 -- TAB: ALLIES
 -- ============================================
 
-local AlliesTab = Window:CreateTab("👥 Allies")
+local AlliesTab = Window:CreateTab("Allies", "👥")
 
 AlliesTab:CreateInput({
     Name = "Player Name",
@@ -841,7 +841,7 @@ AlliesTab:CreateButton({
 -- TAB: SAFETY
 -- ============================================
 
-local SafetyTab = Window:CreateTab("🛡️ Safety")
+local SafetyTab = Window:CreateTab("Safety", "🛡️")
 
 SafetyTab:CreateToggle({
     Name = "🛡️ Anti Void",
@@ -863,7 +863,7 @@ SafetyTab:CreateToggle({
 -- TAB: INFO
 -- ============================================
 
-local InfoTab = Window:CreateTab("ℹ️ Info")
+local InfoTab = Window:CreateTab("Info", "ℹ️")
 
 InfoTab:CreateButton({
     Name = "📊 Script Info",
