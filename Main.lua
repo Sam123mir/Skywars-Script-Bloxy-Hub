@@ -360,17 +360,29 @@ function Window:CreateTab(options)
             end
         end
         
+        -- Alias para compatibilidad
+        section.Toggle = section.CreateToggle
+        section.Button = section.CreateButton
+        section.Slider = section.CreateSlider
+        section.Input = section.CreateInput
+        
         return section
     end
     
+    -- Alias para compatibilidad
+    tab.Section = tab.CreateSection
+    
     return tab
 end
+
+-- Crear alias para compatibilidad
+Window.Tab = Window.CreateTab
 
 -- ============================================
 -- SISTEMA DE AUTO-UPDATE
 -- ============================================
 
-local CURRENT_VERSION = "4.3"
+local CURRENT_VERSION = "4.4"
 local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
 local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
@@ -498,7 +510,7 @@ local lockedTarget = nil
 
 local config = {
     -- Script Info
-    _version = "4.3",
+    _version = "4.4",
     _buildDate = "2026-01-03",
     _author = "16bitplayer",
     _scriptURL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua",
