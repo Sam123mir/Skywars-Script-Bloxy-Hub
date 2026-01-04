@@ -52,8 +52,8 @@ local Window = WindUI:CreateWindow({
 -- ============================================
 
 local CURRENT_VERSION = "4.1"
-local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/refs/heads/main/version.txt"
-local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/refs/heads/main/Main.lua"
+local VERSION_CHECK_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/version.txt"
+local SCRIPT_URL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua"
 
 local function checkForUpdates()
     local success, versionData = pcall(function()
@@ -158,7 +158,7 @@ local config = {
     _version = "4.1",
     _buildDate = "2026-01-03",
     _author = "16bitplayer",
-    _scriptURL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/refs/heads/main/Main.lua",
+    _scriptURL = "https://raw.githubusercontent.com/Sam123mir/Skywars-Script-Bloxy-Hub/main/Main.lua",
     
     -- Combat
     autoKill = false,
