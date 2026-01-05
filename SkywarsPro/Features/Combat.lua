@@ -77,7 +77,9 @@ local connections = {
     aura = nil,
     reach = nil,
     playerAdded = nil,
-    charAdded = {}
+    playerRemoving = nil,
+    charAdded = {},
+    lockKeyPress = nil
 }
 
 -- State tracking
@@ -87,7 +89,10 @@ local state = {
     weaponCache = nil,
     cacheTime = 0,
     frameCounter = 0,
-    originalHitboxSizes = {}
+    originalHitboxSizes = {},
+    -- TARGET LOCK SYSTEM
+    lockedTarget = nil,
+    lockMode = "auto"  -- "auto" or "manual"
 }
 
 -- ═══════════════════════════════════════════════════════════════
@@ -306,6 +311,7 @@ function Combat:ToggleReach(enabled)
             end
         end
         
+        -- Player Added
         if connections.playerAdded then
             connections.playerAdded:Disconnect()
         end
@@ -321,6 +327,26 @@ function Combat:ToggleReach(enabled)
             end
         end)
         
+        -- Player Removing (FIX WARNINGS)
+        if connections.playerRemoving then
+            connections.playerRemoving:Disconnect()
+        end
+        
+        connections.playerRemoving = Players.PlayerRemoving:Connect(function(player)
+            -- Restore hitbox before player leaves
+            if state.originalHitboxSizes[player] then
+                pcall(function()
+                    if player.Character then
+                        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            hrp.Size = state.originalHitboxSizes[player]
+                        end
+                    end
+                end)
+                state.originalHitboxSizes[player] = nil
+            end
+        end)
+        
         print("✅ Reach Extension: ENABLED |", self.Settings.ReachSize, "studs")
     else
         for player, _ in pairs(state.originalHitboxSizes) do
@@ -332,6 +358,11 @@ function Combat:ToggleReach(enabled)
         if connections.playerAdded then
             connections.playerAdded:Disconnect()
             connections.playerAdded = nil
+        end
+        
+        if connections.playerRemoving then
+            connections.playerRemoving:Disconnect()
+            connections.playerRemoving = nil
         end
         
         print("❌ Reach Extension: DISABLED")
@@ -532,7 +563,44 @@ local function getEnemiesInRange()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- COMBAT FEATURES WITH FRAME OPTIMIZATION
+-- TARGET LOCK SYSTEM (NEW)
+-- ═══════════════════════════════════════════════════════════════
+
+local function isTargetValid(target)
+    if not target or not target.Character then
+        return false
+    end
+    
+    local humanoid = target.Character:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        return false
+    end
+    
+    -- Check if in range
+    local valid, _, myHrp = validateCharacter()
+    if not valid then return false end
+    
+    local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    local distance = (hrp.Position - myHrp.Position).Magnitude
+    return distance <= Combat.Settings.AttackRange
+end
+
+local function selectNewTarget()
+    local target = getSmartTarget()
+    if target then
+        state.lockedTarget = target
+        print("🎯 Locked onto:", target.Name)
+    else
+        state.lockedTarget = nil
+        print("❌ No target in range")
+    end
+    return target
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- AUTO AIM WITH TARGET LOCK
 -- ═══════════════════════════════════════════════════════════════
 
 function Combat:ToggleAutoAim(enabled)
@@ -547,40 +615,82 @@ function Combat:ToggleAutoAim(enabled)
             connections.aim:Disconnect()
         end
         
+        -- Setup SHIFT keybind for manual target switch
+        if connections.lockKeyPress then
+            connections.lockKeyPress:Disconnect()
+        end
+        
+        local UserInputService = game:GetService("UserInputService")
+        connections.lockKeyPress = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            
+            if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+                -- Switch to next target
+                selectNewTarget()
+            end
+        end)
+        
+        -- Auto lock onto nearest target initially
+        selectNewTarget()
+        
         connections.aim = RunService.Heartbeat:Connect(function()
             if not self.Enabled.AutoAim then return end
             
+            -- Frame skip optimization
             state.frameCounter = state.frameCounter + 1
             if state.frameCounter % self.Settings.UpdateEveryNFrames ~= 0 then
                 return
             end
             
-            local target = getSmartTarget()
-            if not target or not target.Character then return end
-            
-            local aimPart = target.Character:FindFirstChild(self.Settings.AimPart)
-            if not aimPart then
-                aimPart = target.Character:FindFirstChild("HumanoidRootPart")
+            -- Validate locked target
+            if state.lockedTarget then
+                if not isTargetValid(state.lockedTarget) then
+                    print("⚠️ Target lost:", state.lockedTarget.Name)
+                    selectNewTarget()
+                end
+            else
+                -- Auto-acquire target if none locked
+                selectNewTarget()
             end
             
-            if not aimPart then return end
-            
-            local targetPos = predictPosition(target) or aimPart.Position
-            
-            local camera = workspace.CurrentCamera
-            if camera then
-                safeCall(function()
-                    camera.CFrame = CFrame.new(camera.CFrame.Position, targetPos)
-                end)
+            -- Aim at locked target
+            if state.lockedTarget and state.lockedTarget.Character then
+                local aimPart = state.lockedTarget.Character:FindFirstChild(self.Settings.AimPart)
+                if not aimPart then
+                    aimPart = state.lockedTarget.Character:FindFirstChild("HumanoidRootPart")
+                end
+                
+                if not aimPart then return end
+                
+                -- Use prediction if enabled
+                local targetPos = predictPosition(state.lockedTarget) or aimPart.Position
+                
+                local camera = workspace.CurrentCamera
+                if camera then
+                    safeCall(function()
+                        -- SMOOTH LOCK - Camera always faces target
+                        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPos)
+                    end)
+                end
             end
         end)
         
-        print("✅ Auto Aim: ENABLED | Target Part:", self.Settings.AimPart)
+        print("✅ Auto Aim: ENABLED (TARGET LOCK MODE)")
+        print("💡 Press SHIFT to switch target")
+        print("🎯 Target Part:", self.Settings.AimPart)
     else
+        -- Cleanup
         if connections.aim then
             connections.aim:Disconnect()
             connections.aim = nil
         end
+        
+        if connections.lockKeyPress then
+            connections.lockKeyPress:Disconnect()
+            connections.lockKeyPress = nil
+        end
+        
+        state.lockedTarget = nil
         print("❌ Auto Aim: DISABLED")
     end
 end
