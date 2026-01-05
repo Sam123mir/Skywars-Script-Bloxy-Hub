@@ -40,12 +40,22 @@ KeySystem:Verify(function(keyData)
     -- Load Utilities
     _G.SkywarsPro.Utils = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Core/Utilities.lua"))()
     
+    -- Load Icons
+    _G.SkywarsPro.Icons = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Core/Icons.lua"))()
+    
     -- Load Components
     _G.SkywarsPro.Window = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Components/Window.lua"))()
     _G.SkywarsPro.Tab = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Components/Tab.lua"))()
     _G.SkywarsPro.Toggle = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Components/Toggle.lua"))()
     _G.SkywarsPro.Slider = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Components/Slider.lua"))()
     _G.SkywarsPro.Button = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/UI/Components/Button.lua"))()
+    
+    notify("🔧 Loading", "Features...", 2)
+    
+    -- Load Features
+    _G.SkywarsPro.Combat = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/Features/Combat.lua"))()
+    _G.SkywarsPro.Movement = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/Features/Movement.lua"))()
+    _G.SkywarsPro.ESP = loadstring(game:HttpGet(BASE_URL .. "SkywarsPro/Features/ESP.lua"))()
     
     notify("✅ Loaded", "All components ready!", 2)
     task.wait(0.5)
