@@ -96,7 +96,7 @@ end
 -- Helper: Get background gradient
 function Theme:GetBackgroundGradient()
     return ColorSequence.new{
-        ColorSequenceKeypoint.new(0, self.Background.Elevated),
+        ColorSequenceKeypoint.new(0, self.Background.Secondary),
         ColorSequenceKeypoint.new(1, self.Background.Glass)
     }
 end

@@ -153,15 +153,57 @@ local function CreateKeyUI()
     BtnGradient.Rotation = 45
     BtnGradient.Parent = SubmitBtn
     
-    return ScreenGui, KeyBox, SubmitBtn, Info
+    -- Make window draggable
+    local dragging = false
+    local dragInput, dragStart, startPos
+    local UserInputService = game:GetService("UserInputService")
+    
+    local function update(input)
+        local delta = input.Position - dragStart
+        Container.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+    
+    Container.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = Container.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    Container.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+    
+    return ScreenGui, KeyBox, SubmitBtn, Info, Container
 end
 
 -- Verify key function
 function KeySystem:Verify(callback)
-    local Gui, KeyBox, SubmitBtn, Info = CreateKeyUI()
+    local Gui, KeyBox, SubmitBtn, Info, Container = CreateKeyUI()
     
     -- Intro animation
-    local Container = Gui:FindFirstChildOfClass("Frame")
     if Container then
         Container.Size = UDim2.new(0, 0, 0, 0)
         Container:TweenSize(UDim2.new(0, 450, 0, 300), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.5, true)
