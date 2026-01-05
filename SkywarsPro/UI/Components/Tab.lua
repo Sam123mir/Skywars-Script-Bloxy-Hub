@@ -6,8 +6,8 @@
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
-local Theme = require(script.Parent.Parent.Core.Theme)
-local Utils = require(script.Parent.Parent.Core.Utilities)
+local Theme = _G.SkywarsPro.Theme
+local Utils = _G.SkywarsPro.Utils
 
 local Tab = {}
 Tab.__index = Tab
@@ -166,21 +166,21 @@ function Tab:AddLabel(text)
 end
 
 function Tab:AddToggle(name, default, callback)
-    local Toggle = require(script.Parent.Toggle)
+    local Toggle = _G.SkywarsPro.Toggle
     local toggle = Toggle.new(self, name, default, callback)
     table.insert(self.Components, toggle)
     return toggle
 end
 
 function Tab:AddSlider(name, min, max, default, callback)
-    local Slider = require(script.Parent.Slider)
+    local Slider = _G.SkywarsPro.Slider
     local slider = Slider.new(self, name, min, max, default, callback)
     table.insert(self.Components, slider)
     return slider
 end
 
 function Tab:AddButton(name, callback)
-    local Button = require(script.Parent.Button)
+    local Button = _G.SkywarsPro.Button
     local button = Button.new(self, name, callback)
     table.insert(self.Components, button)
     return button

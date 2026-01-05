@@ -6,8 +6,9 @@
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
-local Theme = require(script.Parent.Parent.Core.Theme)
-local Utils = require(script.Parent.Parent.Core.Utilities)
+-- Load from _G (loaded by Loader.lua)
+local Theme = _G.SkywarsPro.Theme
+local Utils = _G.SkywarsPro.Utils
 
 local Window = {}
 Window.__index = Window

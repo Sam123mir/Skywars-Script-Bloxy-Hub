@@ -6,8 +6,8 @@
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
-local Theme = require(script.Parent.Parent.Core.Theme)
-local Utils = require(script.Parent.Parent.Core.Utilities)
+local Theme = _G.SkywarsPro.Theme
+local Utils = _G.SkywarsPro.Utils
 
 local Toggle = {}
 

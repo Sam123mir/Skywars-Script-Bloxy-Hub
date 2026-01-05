@@ -6,6 +6,8 @@
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
+-- No dependencies, standalone module
+
 local Theme = {
     -- Background colors (Dark Mode)
     Background = {
