@@ -3,7 +3,7 @@
 > **The Most Professional Skywars Script for 2026**  
 > Created by **SAMIR (16bitplayer)**
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Version](https://img.shields.io/badge/version-4.0_ELITE-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 ![Game](https://img.shields.io/badge/game-Skywars-orange)
 
@@ -39,11 +39,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Sam123mir/Skywars-Scr
 
 ## 🎯 Features
 
-### ⚔️ Combat
+### ⚔️ Combat (v4.0 ELITE)
 - Auto Aim (Torso targeting)
 - Auto Attack with range
 - Kill Aura
-- Smart weapon switcher
+- **🔥 Reach Extension** (Expands hitboxes)
+- **🔥 Velocity Prediction** (Predicts enemy movement)
+- **🔥 Cooldown Bypass** (Rapid attacks)
+- **🔥 Smart Target Filtering** (Team/Friend ignore, HP priority)
+- **🔥 Quick Presets** (Aggressive/Balanced/Legit)
 
 ### 🧪 Potions
 - Auto Healing (HP threshold)

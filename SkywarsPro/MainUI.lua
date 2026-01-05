@@ -35,9 +35,9 @@ local MiningTab = Tab.new(MainWindow, "Mining", Icons.Pickaxe)
 local SettingsTab = Tab.new(MainWindow, "Settings", Icons.Settings)
 
 -- ═══════════════════════════════════════════════════════════
--- COMBAT TAB (REAL FEATURES)
+-- COMBAT TAB (ELITE FEATURES v4.0)
 -- ═══════════════════════════════════════════════════════════
-CombatTab:AddLabel(Icons.Crosshair .. " Combat Features")
+CombatTab:AddLabel(Icons.Crosshair .. " Core Combat Features")
 
 CombatTab:AddToggle("Auto Aim (Torso)", false, function(value)
     Combat:ToggleAutoAim(value)
@@ -53,6 +53,38 @@ end)
 
 CombatTab:AddToggle("Kill Aura", false, function(value)
     Combat:ToggleKillAura(value)
+end)
+
+CombatTab:AddLabel(Icons.Fire .. " ELITE Features (v4.0)")
+
+CombatTab:AddToggle("Reach Extension", false, function(value)
+    Combat:ToggleReach(value)
+end)
+
+CombatTab:AddSlider("Reach Size", 1, 10, 5, function(value)
+    Combat:SetReachSize(value)
+end)
+
+CombatTab:AddToggle("Velocity Prediction", false, function(value)
+    Combat:TogglePrediction(value)
+end)
+
+CombatTab:AddToggle("Cooldown Bypass", false, function(value)
+    Combat:ToggleCooldownBypass(value)
+end)
+
+CombatTab:AddLabel(Icons.Star .. " Quick Presets")
+
+CombatTab:AddButton(Icons.Fire .. " Aggressive Mode", function()
+    Combat:LoadPreset("aggressive")
+end)
+
+CombatTab:AddButton("⚖️ Balanced Mode", function()
+    Combat:LoadPreset("balanced")
+end)
+
+CombatTab:AddButton("👤 Legit Mode", function()
+    Combat:LoadPreset("legit")
 end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -139,11 +171,14 @@ SettingsTab:AddButton(Icons.Reset .. " Reset Script", function()
     })
 end)
 
-print("✅ Skywars Ultimate Pro loaded with REAL features!")
+print("✅ Skywars Ultimate Pro loaded with ELITE features v4.0!")
 print("Features working:")
 print("  " .. Icons.Check .. " Auto Aim")
 print("  " .. Icons.Check .. " Auto Attack")
 print("  " .. Icons.Check .. " Kill Aura")
+print("  " .. Icons.Fire .. " Reach Extension (ELITE)")
+print("  " .. Icons.Fire .. " Velocity Prediction (ELITE)")
+print("  " .. Icons.Fire .. " Cooldown Bypass (ELITE)")
 print("  " .. Icons.Check .. " Flight (WASD + Space/Shift)")
 print("  " .. Icons.Check .. " Speed Boost")
 print("  " .. Icons.Check .. " Player ESP")
