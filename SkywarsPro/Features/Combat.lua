@@ -1,8 +1,8 @@
 --[[
     ╔════════════════════════════════════════════════════════════╗
-    ║  ⚔️ SKYWARS ULTIMATE PRO - COMBAT FEATURES                 ║
+    ║  ⚔️ SKYWARS ULTIMATE PRO - COMBAT FEATURES (FIXED)         ║
     ║  Created by: SAMIR (16bitplayer) - 2026                    ║
-    ║  Real combat functionality                                 ║
+    ║  Real combat functionality with proper nil checking        ║
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
@@ -14,25 +14,49 @@ Combat.Enabled = {
 }
 Combat.Settings = {
     AttackRange = 20,
-    AimPart = "Torso"  -- Apuntar al torso (helmets deflect headshots)
+    AimPart = "Torso"
 }
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 
--- Get closest enemy
+-- Safe wait for character
+local function waitForCharacter()
+    local char = Player.Character
+    if not char then
+        Player.CharacterAdded:Wait()
+        char = Player.Character
+    end
+    
+    -- Wait for HumanoidRootPart
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local humanoid = char:WaitForChild("Humanoid", 5)
+    
+    return char, hrp, humanoid
+end
+
+-- Get closest enemy with nil checks
 local function getClosestEnemy()
+    local char, myHrp = Player.Character, nil
+    if char then
+        myHrp = char:FindFirstChild("HumanoidRootPart")
+    end
+    
+    if not myHrp then return nil end
+    
     local closestPlayer = nil
     local shortestDistance = Combat.Settings.AttackRange
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Player and player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character.Humanoid
-            if humanoid.Health > 0 then
-                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (hrp.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+        if player ~= Player then
+            local enemyChar = player.Character
+            if enemyChar then
+                local humanoid = enemyChar:FindFirstChild("Humanoid")
+                local hrp = enemyChar:FindFirstChild("HumanoidRootPart")
+                
+                if humanoid and hrp and humanoid.Health > 0 then
+                    local distance = (hrp.Position - myHrp.Position).Magnitude
                     if distance < shortestDistance then
                         shortestDistance = distance
                         closestPlayer = player
@@ -45,29 +69,43 @@ local function getClosestEnemy()
     return closestPlayer
 end
 
--- Auto Aim
+-- Auto Aim (FIXED)
 local aimConnection
 function Combat:ToggleAutoAim(enabled)
     self.Enabled.AutoAim = enabled
     
     if enabled then
-        if aimConnection then aimConnection:Disconnect() end
-        
-        aimConnection = RunService.Heartbeat:Connect(function()
-            if not self.Enabled.AutoAim then return end
-            
-            local target = getClosestEnemy()
-            if target and target.Character then
-                local aimPart = target.Character:FindFirstChild(self.Settings.AimPart) or target.Character:FindFirstChild("HumanoidRootPart")
-                if aimPart and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Aim camera at target
-                    local camera = workspace.CurrentCamera
-                    camera.CFrame = CFrame.new(camera.CFrame.Position, aimPart.Position)
-                end
+        -- Wait for character first
+        task.spawn(function()
+            local char, hrp  = waitForCharacter()
+            if not char or not hrp then
+                warn("❌ Cannot enable Auto Aim - Character not ready")
+                return
             end
+            
+            if aimConnection then aimConnection:Disconnect() end
+            
+            aimConnection = RunService.Heartbeat:Connect(function()
+                if not self.Enabled.AutoAim then return end
+                
+                local target = getClosestEnemy()
+                if target and target.Character then
+                    local aimPart = target.Character:FindFirstChild(self.Settings.AimPart)
+                    if not aimPart then
+                        aimPart = target.Character:FindFirstChild("HumanoidRootPart")
+                    end
+                    
+                    if aimPart then
+                        local camera = workspace.CurrentCamera
+                        if camera then
+                            camera.CFrame = CFrame.new(camera.CFrame.Position, aimPart.Position)
+                        end
+                    end
+                end
+            end)
+            
+            print("✅ Auto Aim: ENABLED")
         end)
-        
-        print("✅ Auto Aim: ENABLED")
     else
         if aimConnection then
             aimConnection:Disconnect()
@@ -77,39 +115,57 @@ function Combat:ToggleAutoAim(enabled)
     end
 end
 
--- Auto Attack
+-- Auto Attack (FIXED)
 local attackConnection
 function Combat:ToggleAutoAttack(enabled)
     self.Enabled.AutoAttack = enabled
     
     if enabled then
-        if attackConnection then attackConnection:Disconnect() end
-        
-        attackConnection = RunService.Heartbeat:Connect(function()
-            if not self.Enabled.AutoAttack then return end
+        task.spawn(function()
+            local char, hrp = waitForCharacter()
+            if not char or not hrp then
+                warn("❌ Cannot enable Auto Attack - Character not ready")
+                return
+            end
             
-            local target = getClosestEnemy()
-            if target and Player.Character then
-                -- Find sword in backpack or character
-                local sword = Player.Character:FindFirstChildOfClass("Tool")
-                if not sword then
-                    for _, tool in ipairs(Player.Backpack:GetChildren()) do
-                        if tool.Name:lower():find("sword") then
-                            sword = tool
-                            sword.Parent = Player.Character
-                            break
-                        end
-                    end
+            if attackConnection then attackConnection:Disconnect() end
+            
+            attackConnection = RunService.Heartbeat:Connect(function()
+                if not self.Enabled.AutoAttack then return end
+                
+                -- Check character still exists
+                if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                    return
                 end
                 
-                if sword and sword:FindFirstChild("Handle") then
-                    -- Attack
-                    sword:Activate()
+                local target = getClosestEnemy()
+                if target then
+                    -- Find sword
+                    local sword = Player.Character:FindFirstChildOfClass("Tool")
+                    
+                    if not sword or not sword.Name:lower():find("sword") then
+                        -- Try to equip from backpack
+                        for _, tool in ipairs(Player.Backpack:GetChildren()) do
+                            if tool:IsA("Tool") and tool.Name:lower():find("sword") then
+                                sword = tool
+                                humanoid = Player.Character:FindFirstChild("Humanoid")
+                                if humanoid then
+                                    humanoid:EquipTool(tool)
+                                end
+                                break
+                            end
+                        end
+                    end
+                    
+                    -- Activate sword
+                    if sword and sword:FindFirstChild("Handle") then
+                        sword:Activate()
+                    end
                 end
-            end
+            end)
+            
+            print("✅ Auto Attack: ENABLED")
         end)
-        
-        print("✅ Auto Attack: ENABLED")
     else
         if attackConnection then
             attackConnection:Disconnect()
@@ -119,44 +175,65 @@ function Combat:ToggleAutoAttack(enabled)
     end
 end
 
--- Kill Aura
+-- Kill Aura (FIXED)
 local auraConnection
 function Combat:ToggleKillAura(enabled)
     self.Enabled.KillAura = enabled
     
     if enabled then
-        if auraConnection then auraConnection:Disconnect() end
-        
-        auraConnection = RunService.Heartbeat:Connect(function()
-            if not self.Enabled.KillAura then return end
+        task.spawn(function()
+            local char, hrp = waitForCharacter()
+            if not char or not hrp then
+                warn("❌ Cannot enable Kill Aura - Character not ready")
+                return
+            end
             
-            -- Attack all enemies in range
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= Player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (player.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                    
-                    if distance <= self.Settings.AttackRange then
-                        -- Find sword
-                        local sword = Player.Character:FindFirstChildOfClass("Tool")
-                        if not sword then
-                            for _, tool in ipairs(Player.Backpack:GetChildren()) do
-                                if tool.Name:lower():find("sword") then
-                                    sword = tool
-                                    sword.Parent = Player.Character
-                                    break
+            if auraConnection then auraConnection:Disconnect() end
+            
+            auraConnection = RunService.Heartbeat:Connect(function()
+                if not self.Enabled.KillAura then return end
+                
+                -- Check character
+                if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                    return
+                end
+                
+                local myHrp = Player.Character.HumanoidRootPart
+                
+                -- Attack all in range
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= Player and player.Character then
+                        local enemyHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                        if enemyHrp then
+                            local distance = (enemyHrp.Position - myHrp.Position).Magnitude
+                            
+                            if distance <= self.Settings.AttackRange then
+                                -- Find and activate sword
+                                local sword = Player.Character:FindFirstChildOfClass("Tool")
+                                if not sword or not sword.Name:lower():find("sword") then
+                                    for _, tool in ipairs(Player.Backpack:GetChildren()) do
+                                        if tool:IsA("Tool") and tool.Name:lower():find("sword") then
+                                            local humanoid = Player.Character:FindFirstChild("Humanoid")
+                                            if humanoid then
+                                                humanoid:EquipTool(tool)
+                                                sword = tool
+                                            end
+                                            break
+                                        end
+                                    end
+                                end
+                                
+                                if sword then
+                                    sword:Activate()
                                 end
                             end
                         end
-                        
-                        if sword then
-                            sword:Activate()
-                        end
                     end
                 end
-            end
+            end)
+            
+            print("✅ Kill Aura: ENABLED")
         end)
-        
-        print("✅ Kill Aura: ENABLED")
     else
         if auraConnection then
             auraConnection:Disconnect()
