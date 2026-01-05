@@ -111,12 +111,16 @@ function Movement:ToggleFlight(enabled)
             print("🛡️ Fall damage: DISABLED")
         end)
     else
-        -- Cleanup flight
-        if flightBodyVelocity then
+        -- Cleanup flight (FIXED - no más warnings!)
+        if flightBodyVelocity and flightBodyVelocity.Parent then
+            flightBodyVelocity.Parent = nil
+            task.wait()
             flightBodyVelocity:Destroy()
             flightBodyVelocity = nil
         end
-        if flightBodyGyro then
+        if flightBodyGyro and flightBodyGyro.Parent then
+            flightBodyGyro.Parent = nil
+            task.wait()
             flightBodyGyro:Destroy()
             flightBodyGyro = nil
         end

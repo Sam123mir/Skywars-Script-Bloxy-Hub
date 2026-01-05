@@ -1,8 +1,8 @@
 --[[
     ╔════════════════════════════════════════════════════════════╗
-    ║  ⚔️ SKYWARS ULTIMATE PRO - COMBAT FEATURES (FIXED)         ║
+    ║  ⚔️ SKYWARS ULTIMATE PRO - COMBAT (FIXED v2)               ║
     ║  Created by: SAMIR (16bitplayer) - 2026                    ║
-    ║  Real combat functionality with proper nil checking        ║
+    ║  Mejor sistema de auto-equip y ataque                      ║
     ╚════════════════════════════════════════════════════════════╝
 ]]
 
@@ -21,28 +21,90 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 
--- Safe wait for character
-local function waitForCharacter()
-    local char = Player.Character
-    if not char then
-        Player.CharacterAdded:Wait()
-        char = Player.Character
+-- Mejorado: Encontrar mejor arma
+local function findBestWeapon()
+    local weapons = {}
+    
+    -- Buscar en character
+    if Player.Character then
+        for _, tool in ipairs(Player.Character:GetChildren()) do
+            if tool:IsA("Tool") then
+                local name = tool.Name:lower()
+                if name:find("sword") or name:find("blade") or name:find("katana") then
+                    table.insert(weapons, {tool = tool, location = "equipped"})
+                end
+            end
+        end
     end
     
-    -- Wait for HumanoidRootPart
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
-    local humanoid = char:WaitForChild("Humanoid", 5)
+    -- Buscar en backpack
+    for _, tool in ipairs(Player.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            local name = tool.Name:lower()
+            if name:find("sword") or name:find("blade") or name:find("katana") then
+                table.insert(weapons, {tool = tool, location = "backpack"})
+            end
+        end
+    end
     
-    return char, hrp, humanoid
+    -- Prioridad: Obsidian > Diamond > Stone > Wood
+    local priority = {
+        ["obsidian"] = 4,
+        ["diamond"] = 3,
+        ["emerald"] = 3,
+        ["stone"] = 2,
+        ["wood"] = 1
+    }
+    
+    table.sort(weapons, function(a, b)
+        local aPriority = 0
+        local bPriority = 0
+        
+        for tier, value in pairs(priority) do
+            if a.tool.Name:lower():find(tier) then aPriority = value end
+            if b.tool.Name:lower():find(tier) then bPriority = value end
+        end
+        
+        return aPriority > bPriority
+    end)
+    
+    return weapons[1]
 end
 
--- Get closest enemy with nil checks
-local function getClosestEnemy()
-    local char, myHrp = Player.Character, nil
-    if char then
-        myHrp = char:FindFirstChild("HumanoidRootPart")
+-- Equipar arma mejorado
+local function equipWeapon()
+    if not Player.Character then return nil end
+    
+    local humanoid = Player.Character:FindFirstChild("Humanoid")
+    if not humanoid then return nil end
+    
+    -- Verificar si ya tiene una equipada
+    local equipped = Player.Character:FindFirstChildOfClass("Tool")
+    if equipped and (equipped.Name:lower():find("sword") or equipped.Name:lower():find("blade")) then
+        return equipped
     end
     
+    -- Buscar mejor arma
+    local bestWeapon = findBestWeapon()
+    if not bestWeapon then
+        return nil
+    end
+    
+    -- Equipar
+    if bestWeapon.location == "backpack" then
+        humanoid:EquipTool(bestWeapon.tool)
+        task.wait(0.1) -- Esperar a que se equipe
+        return bestWeapon.tool
+    else
+        return bestWeapon.tool
+    end
+end
+
+-- Get closest enemy (mejorado)
+local function getClosestEnemy()
+    if not Player.Character then return nil end
+    
+    local myHrp = Player.Character:FindFirstChild("HumanoidRootPart")
     if not myHrp then return nil end
     
     local closestPlayer = nil
@@ -69,18 +131,15 @@ local function getClosestEnemy()
     return closestPlayer
 end
 
--- Auto Aim (FIXED)
+-- Auto Aim (sin cambios)
 local aimConnection
 function Combat:ToggleAutoAim(enabled)
     self.Enabled.AutoAim = enabled
     
     if enabled then
-        -- Wait for character first
         task.spawn(function()
-            local char, hrp  = waitForCharacter()
-            if not char or not hrp then
-                warn("❌ Cannot enable Auto Aim - Character not ready")
-                return
+            if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                task.wait(2)
             end
             
             if aimConnection then aimConnection:Disconnect() end
@@ -115,56 +174,55 @@ function Combat:ToggleAutoAim(enabled)
     end
 end
 
--- Auto Attack (FIXED)
+-- Auto Attack (COMPLETAMENTE REESCRITO)
 local attackConnection
+local lastEquipAttempt = 0
+local equipCooldown = 1 -- segundos
+
 function Combat:ToggleAutoAttack(enabled)
     self.Enabled.AutoAttack = enabled
     
     if enabled then
         task.spawn(function()
-            local char, hrp = waitForCharacter()
-            if not char or not hrp then
-                warn("❌ Cannot enable Auto Attack - Character not ready")
-                return
+            if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                task.wait(2)
             end
             
             if attackConnection then attackConnection:Disconnect() end
             
+            print("✅ Auto Attack: ENABLED")
+            print("🔍 Buscando armas disponibles...")
+            
             attackConnection = RunService.Heartbeat:Connect(function()
                 if not self.Enabled.AutoAttack then return end
-                
-                -- Check character still exists
                 if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
                     return
                 end
                 
                 local target = getClosestEnemy()
                 if target then
-                    -- Find sword
-                    local sword = Player.Character:FindFirstChildOfClass("Tool")
+                    -- Intentar equipar arma
+                    local currentTime = tick()
+                    local weapon = Player.Character:FindFirstChildOfClass("Tool")
                     
-                    if not sword or not sword.Name:lower():find("sword") then
-                        -- Try to equip from backpack
-                        for _, tool in ipairs(Player.Backpack:GetChildren()) do
-                            if tool:IsA("Tool") and tool.Name:lower():find("sword") then
-                                sword = tool
-                                humanoid = Player.Character:FindFirstChild("Humanoid")
-                                if humanoid then
-                                    humanoid:EquipTool(tool)
-                                end
-                                break
+                    if not weapon or not (weapon.Name:lower():find("sword") or weapon.Name:lower():find("blade")) then
+                        -- Solo intentar equipar cada X segundos para no spammear
+                        if currentTime - lastEquipAttempt > equipCooldown then
+                            weapon = equipWeapon()
+                            lastEquipAttempt = currentTime
+                            
+                            if weapon then
+                                print("⚔️ Equipado:", weapon.Name)
                             end
                         end
                     end
                     
-                    -- Activate sword
-                    if sword and sword:FindFirstChild("Handle") then
-                        sword:Activate()
+                    -- Atacar si tiene arma
+                    if weapon and weapon:IsA("Tool") then
+                        weapon:Activate()
                     end
                 end
             end)
-            
-            print("✅ Auto Attack: ENABLED")
         end)
     else
         if attackConnection then
@@ -175,64 +233,56 @@ function Combat:ToggleAutoAttack(enabled)
     end
 end
 
--- Kill Aura (FIXED)
+-- Kill Aura (MEJORADO)
 local auraConnection
 function Combat:ToggleKillAura(enabled)
     self.Enabled.KillAura = enabled
     
     if enabled then
         task.spawn(function()
-            local char, hrp = waitForCharacter()
-            if not char or not hrp then
-                warn("❌ Cannot enable Kill Aura - Character not ready")
-                return
+            if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                task.wait(2)
             end
             
             if auraConnection then auraConnection:Disconnect() end
             
+            print("✅ Kill Aura: ENABLED")
+            
             auraConnection = RunService.Heartbeat:Connect(function()
                 if not self.Enabled.KillAura then return end
-                
-                -- Check character
                 if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
                     return
                 end
                 
                 local myHrp = Player.Character.HumanoidRootPart
+                local weapon = Player.Character:FindFirstChildOfClass("Tool")
                 
-                -- Attack all in range
+                -- Auto-equipar si no tiene arma
+                if not weapon or not (weapon.Name:lower():find("sword") or weapon.Name:lower():find("blade")) then
+                    weapon = equipWeapon()
+                end
+                
+                if not weapon then return end
+                
+                -- Atacar todos en rango
+                local attacked = false
                 for _, player in ipairs(Players:GetPlayers()) do
                     if player ~= Player and player.Character then
                         local enemyHrp = player.Character:FindFirstChild("HumanoidRootPart")
-                        if enemyHrp then
+                        local enemyHumanoid = player.Character:FindFirstChild("Humanoid")
+                        
+                        if enemyHrp and enemyHumanoid and enemyHumanoid.Health > 0 then
                             local distance = (enemyHrp.Position - myHrp.Position).Magnitude
                             
                             if distance <= self.Settings.AttackRange then
-                                -- Find and activate sword
-                                local sword = Player.Character:FindFirstChildOfClass("Tool")
-                                if not sword or not sword.Name:lower():find("sword") then
-                                    for _, tool in ipairs(Player.Backpack:GetChildren()) do
-                                        if tool:IsA("Tool") and tool.Name:lower():find("sword") then
-                                            local humanoid = Player.Character:FindFirstChild("Humanoid")
-                                            if humanoid then
-                                                humanoid:EquipTool(tool)
-                                                sword = tool
-                                            end
-                                            break
-                                        end
-                                    end
-                                end
-                                
-                                if sword then
-                                    sword:Activate()
-                                end
+                                weapon:Activate()
+                                attacked = true
+                                break -- Solo atacar uno por frame
                             end
                         end
                     end
                 end
             end)
-            
-            print("✅ Kill Aura: ENABLED")
         end)
     else
         if auraConnection then
@@ -243,10 +293,10 @@ function Combat:ToggleKillAura(enabled)
     end
 end
 
--- Set attack range
+-- Set range
 function Combat:SetRange(range)
     self.Settings.AttackRange = range
-    print("⚔️ Attack Range:", range)
+    print("⚔️ Attack Range:", range, "studs")
 end
 
 -- Cleanup
